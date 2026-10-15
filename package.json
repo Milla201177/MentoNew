@@ -1,0 +1,94 @@
+{
+  "name": "mento",
+  "version": "1.0.0",
+  "description": "Mento landing \u2014 Next.js (App Router) + Payload CMS",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/migrate-on-deploy.mjs && cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" node tools/local-next.mjs build --webpack",
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation node tools/local-next.mjs dev --webpack",
+    "devsafe": "cross-env NODE_OPTIONS=--no-deprecation node tools/local-next.mjs dev --webpack",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation node tools/local-next.mjs start",
+    "test": "bun run test:int && bun run test:e2e",
+    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:gates": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.gates.config.ts",
+    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "test:lh": "bun run build && lhci autorun",
+    "test:size": "size-limit",
+    "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+    "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+    "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@payloadcms/db-postgres": "^3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "@payloadcms/storage-vercel-blob": "^3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "cross-env": "^7.0.3",
+    "dotenv": "16.4.7",
+    "graphql": "^16.14.2",
+    "gsap": "^3.15.0",
+    "next": "16.4.0",
+    "payload": "3.90.2",
+    "pg": "8.20.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "1.58.2",
+    "@size-limit/file": "^12.1.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/react": "16.3.0",
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.5.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.0",
+    "jsdom": "28.0.0",
+    "postcss": "^8.5.26",
+    "prettier": "^3.9.6",
+    "size-limit": "^12.1.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "4.21.0",
+    "typescript": "5.7.3",
+    "vite-tsconfig-paths": "6.0.5",
+    "vitest": "4.1.9"
+  },
+  "overrides": {
+    "baseline-browser-mapping": "^2.11.0",
+    "brace-expansion": "^1.1.17",
+    "fast-uri": "^3.1.8",
+    "immutable": "^4.3.9",
+    "js-yaml": "^4.3.2",
+    "nanoid": "^3.3.16",
+    "postcss": "^8.5.28",
+    "source-map-js": "^1.2.2",
+    "sharp": "^0.35.5",
+    "tmp": "^0.2.4",
+    "undici": "^7.30.0",
+    "vite": "^6.4.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "esbuild",
+      "unrs-resolver"
+    ]
+  },
+  "trustedDependencies": [
+    "unrs-resolver"
+  ]
+}

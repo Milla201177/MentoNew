@@ -1,0 +1,3550 @@
+/* =============================================================================
+ * Frontend global stylesheet — Tailwind CSS v4 + Mento brand design tokens.
+ *
+ * This file is imported ONLY from `src/app/(frontend)/layout.tsx`. It must NEVER
+ * be imported by the Payload admin (`(payload)` route group), otherwise
+ * Tailwind's preflight/base reset would leak into and break the admin UI.
+ *
+ * Tailwind v4 uses CSS-first config: `@import "tailwindcss"` pulls in
+ * preflight + utilities, and the `@theme` block below registers brand tokens
+ * so they become first-class utilities (e.g. `bg-brand-teal`, `text-brand-dark`).
+ * ========================================================================== */
+
+@import 'tailwindcss';
+
+/* Design tokens generated from Figma (source of truth). Two tiers:
+ * primitives (--color-palette-*, --radius-*, --spacing-*, --font-*) and
+ * semantic (--color-surface-*, --color-text-*, --color-pill-*, --radius-pill,
+ * --radius-card, --font-display-size, --label-*). New work consumes SEMANTIC
+ * tokens. The legacy `--color-brand-*` tokens below remain until existing
+ * sections (Hero/About/Navbar) are migrated — same values, transitional. */
+@import './tokens.generated.css';
+
+/* -----------------------------------------------------------------------------
+ * Source scanning scope.
+ *
+ * Tailwind v4 auto-detects template files, but we exclude the legacy Astro
+ * sources and the Payload admin so their class names never feed into the
+ * frontend's generated utilities. (Admin already never loads this CSS, but
+ * this keeps scanning lean and intentional.)
+ * -------------------------------------------------------------------------- */
+@source not '../../../_legacy';
+@source not '../(payload)';
+
+/* -----------------------------------------------------------------------------
+ * Brand design tokens (Mento)
+ *
+ * Extracted from the original Astro stylesheet (`_legacy/src/styles/global.css`).
+ * Naming: `--color-brand-*` so Tailwind exposes `*-brand-*` color utilities.
+ * -------------------------------------------------------------------------- */
+@theme {
+  /* Optical correction for uppercase set in PP Supply Mono.
+   *
+   * The face reserves descender depth that uppercase never uses, so an
+   * uppercase-only label sits high in its line box and reads as misaligned
+   * inside anything with a fill — measured 2.4px off centre in the VIEW
+   * toggle's active chip and 2.9px in the Show All button, both at 14px. The
+   * spread between them is subpixel rasterisation, not two different problems.
+   *
+   * Applied as a transform on the text, never as padding: the boxes are
+   * already centred correctly and their heights come from the design. This
+   * moves the ink inside them and leaves every measurement intact. In em so it
+   * tracks the fluid label scale. */
+  --mono-cap-nudge: 0em; /* Satoshi needs no old mono-font offset */
+
+  /* Hover partner for the ink. Every button and link used to answer hover with
+   * the brand teal, the last green left after the rebrand. This is the SAME
+   * hue and saturation as #04212b at double the lightness (HSL 195°/83%, L 9%
+   * -> 18%), so hover still reads as a lift without introducing a second
+   * colour. 11:1 on white and 13:1 under white text — both clear AA. */
+  --color-ink-hover: #084054;
+
+  /* Core greens / teals */
+  --color-brand-dark: #04212b; /* brand ink — headings, dark words */
+  --color-brand-teal: #2a8a82; /* brand teal */
+  --color-brand-teal-deep: #1e6e68; /* deep teal */
+  --color-brand-bg: #258a86; /* page/section background teal */
+  --color-brand-bg-gradient: #267e7a; /* top gradient start */
+  --color-brand-gradient-end: #1bacaa; /* CTA gradient end (paired with brand-dark) */
+
+  /* Cyan / mint accents */
+  --color-brand-cyan: #82fff7; /* cursor crosshair glow (used with alpha) */
+  --color-brand-mint: #98ede0;
+  --color-brand-mint-soft: #e7f9f2; /* stat badge background */
+  --color-brand-green-accent: #147a3a; /* positive stat figure (WCAG AA 4.96:1 on #e7f9f2) */
+
+  /* Neutrals */
+  --color-brand-cream: #ffffff; /* legacy alias of the page surface — now white */
+
+  /* Corner radius — override generated --radius-card (16px): all cards & photos
+   * round to 12px. */
+  --radius-card: 12px;
+
+  /* Label type — override the generated --label-size/--label-tracking, which
+   * come from Figma as a static 14px/0.42px. Several rules read them (.pill-tag
+   * and the labels across Portfolio and the navbar), and a static token meant
+   * those were the last text on the site that
+   * did not move with the viewport. Pointing them at the fluid step keeps one
+   * scale for everything; tracking follows in em so it holds its ratio. */
+  --label-size: var(--fluid-label);
+  --label-tracking: 0.03em;
+
+  /* Brand fonts — three faces, one role each. The `--font-dm-sans`,
+   * `--font-inter` and `--font-supply-mono` variables are injected onto <html>
+   * by next/font (see layout.tsx); the tokens below name the ROLE so rules read
+   * as intent ("this is a heading") rather than as a typeface choice, and a
+   * future swap touches these three lines instead of seventy.
+   *
+   * A system stack sits behind each one: it is what renders during `swap`,
+   * before the woff2 arrives. */
+  --font-heading: var(--font-clash-display), 'Clash Display', sans-serif;
+  --font-sans: var(--font-satoshi), 'Satoshi', sans-serif;
+  --font-mono: var(--font-sans); /* legacy token alias; only Satoshi is loaded */
+}
+
+/* =============================================================================
+ * FLUID SCALING — 1440px design reference, 1920px ceiling.
+ *
+ * Each value is a linear ramp `y = mx + b` solved through two points: the Figma
+ * size at 1440px, and its scaled size at 1920px. clamp() freezes the ramp
+ * outside that band, so layout at <=1440px stays byte-identical to what Figma
+ * specifies, and nothing keeps growing past 1920px.
+ *
+ * Two deliberately different rates:
+ *   - LAYOUT (container, columns, gutters) scales 1.333x — fully proportional,
+ *     so the 1248px grid fills a 1920px screen instead of stranding 336px of
+ *     dead margin per side. Written as pure vw: these are boxes, not text, so
+ *     the WCAG 1.4.4 text-resize requirement does not apply to them.
+ *   - TYPE above 1440 is proportional too, so a wide window enlarges the page
+ *     rather than re-laying it out. This is a deliberate reversal of what this
+ *     file used to do, and it costs something real, so it is written down here:
+ *
+ *     the old ramps stepped type at 1.25x (display) and 1.125x (body) against
+ *     the layout's 1.333x, and kept a `rem` term in every token so the size
+ *     still answered the reader's browser font-size setting. Measured, that
+ *     mismatch is what made a wide window rearrange the page instead of
+ *     enlarging it: between 1440 and 1920 the About paragraphs re-broke three
+ *     times, and an audit of every element in four sections found 47/83 values
+ *     off-scale in the hero, 320/430 in Focus, 885/1219 in Portfolio and 34/58
+ *     in the footer.
+ *
+ *     Proportional and rem-responsive are mutually exclusive: a value that is
+ *     exactly `size * viewport / 1440` has a zero intercept, and the intercept
+ *     IS the rem term. Below 1440 the tokens keep their rem term and their
+ *     gentler ramp — that is where small type would actually hurt — so what is
+ *     given up is specifically the reader's font-size preference on screens
+ *     WIDER than the design width, where text is already at or above its design
+ *     size. Browser zoom is unaffected: it scales the viewport, so it scales vw.
+ *
+ * vw coefficient for a proportional value = size / 14.4 (i.e. size / 1440 * 100).
+ * ========================================================================== */
+:root {
+  /* Layout — 1.333x, proportional.
+   *
+   * Figma "Option 2" sets the page gutter at ~202px on the 1440 frame, leaving
+   * a 1036px measure. Both tokens below are that pair, ramped at the same
+   * 1.333x as the rest of the layout: at 1440 they read 200px / 1040px, at the
+   * 1920 ceiling 266.67px / 1386.67px. They are two halves of one invariant —
+   * `2 * margin + container == viewport` — so they must always move together.
+   *
+   * `--grid-margin` had never actually been declared: every rule referenced it
+   * as `var(--grid-margin, 96px)` and silently took the fallback, so the old
+   * 96px gutter was spelled out in ten places and defined in none. The
+   * fallbacks are updated to 200px too, so a rule that misses this declaration
+   * still lands on the design value rather than the previous one. */
+  --grid-margin: clamp(200px, 13.8889vw, 266.67px);
+  --fluid-container: clamp(1040px, 72.2222vw, 1386.67px);
+
+  /* One design pixel, proportional. THE unit this tier is built on.
+   *
+   * `100vw / 1440` is exactly 1px at the design width and grows with the
+   * viewport; the second term stops it at the 1920 ceiling every other ramp on
+   * the page already stops at. Both are written as division rather than a vw
+   * coefficient so they are exact — 0.0694444vw is 0.99999936px at 1440, and
+   * that error compounds through a section.
+   *
+   * Everything below is then `calc(<the Figma number at 1440> * var(--px))`,
+   * which keeps the design value readable in the source and puts every value in
+   * the tier on one ramp. Flat pixels were the largest single source of a
+   * section drifting out of composition on a wide screen: the type and the grid
+   * grew, and the space between them did not. */
+  --px: min(calc(100vw / 1440), calc(1920px / 1440));
+
+  /* Vertical rhythm between sections, ramped rather than stepped.
+   *
+   * The design gives 152px at 1440 and the phone tier 64px, and those two were
+   * spelled out as a base value plus a `max-width` override — so a section lost
+   * 88px of height the moment the viewport crossed 640, a 17% jump in the
+   * middle of an otherwise continuous resize. This is the same value expressed
+   * as one proportional ramp: 10.5556vw IS 152/1440, so it lands on the design
+   * number at the design width, reaches the 64px floor at 606 and the 1920
+   * ceiling at 202.67. The floor and the ceiling are the only two flat spots.
+   *
+   * Sections with a different phone tier (Portfolio wants 80) raise the floor
+   * rather than reintroducing a breakpoint. */
+  --section-pad-block: clamp(64px, 10.5556vw, 202.67px);
+
+  /* One step per size in the design. Each is a ramp from the Figma size at
+   * 1440px up to the 1920px ceiling; a second ramp in the media query below
+   * carries the same token DOWN to its 640px size. Two ramps meeting at 1440
+   * rather than one stretched across the whole range — a single line through
+   * 640 and 1920 overshoots the Figma value badly at the design width (hero
+   * would read 68px instead of 64, h3 35 instead of 32).
+   *
+   * Above 1440 every step is proportional, so the page enlarges rather than
+   * re-flows; below it the tokens keep their gentler ramp and their `rem`
+   * term. See the note at the top of this block for why the two halves differ. */
+
+  /* Type — 1.333x, the same ramp as the layout.
+   *
+   * Each token is the Figma size at 1440 times `--px`, so it grows with the
+   * viewport and stops at the same 1920 ceiling. No lower bound is needed —
+   * this tier only applies at 1440 and up, and the media query below owns
+   * everything narrower.
+   *
+   * Figma "Option 4" (549:493) re-cut two of these downward, and each has
+   * exactly two consumers which moved together, so the token moved rather than
+   * being split per section:
+   *   --fluid-display  176 -> 170  (.focus-heading 549:707, .portfolio-display)
+   *   --fluid-h2        40 ->  28  (.about-heading 549:589, .portfolio-subheading)
+   *
+   * Both of those have since moved to `--fluid-subhead`, which shares this
+   * ramp above 1440 and parts from it below; `--fluid-h2` is kept because it is
+   * a step of the exported scale, not because anything still reads it.
+   */
+  --fluid-display: calc(170 * var(--px)); /* 170 -> 226.67 */
+  --fluid-hero: calc(64 * var(--px)); /* 64 -> 85.33 */
+  --fluid-h2: calc(28 * var(--px)); /* 28 -> 37.33 */
+  /* The three section sub-headings — see the note above `--fluid-subhead` in
+     the 640-1440 tier for why they have a token of their own. */
+  --fluid-subhead: calc(28 * var(--px)); /* 28 -> 37.33 */
+  --fluid-h3: calc(32 * var(--px)); /* 32 -> 42.67 */
+  --fluid-h4: calc(26 * var(--px)); /* 26 -> 34.67 */
+  --fluid-h5: calc(24 * var(--px)); /* 24 -> 32 */
+
+  --fluid-body: calc(20 * var(--px)); /* 20 -> 26.67 */
+  --fluid-body-md: calc(18 * var(--px)); /* 18 -> 24 */
+  --fluid-body-sm: calc(16 * var(--px)); /* 16 -> 21.33 */
+  --fluid-label: calc(14 * var(--px)); /* 14 -> 18.67 */
+  --fluid-label-sm: calc(12 * var(--px)); /* 12 -> 16 */
+
+  /* Controls — pill buttons and filters. These keep a wider travel than type in
+   * the tier below (a control that holds its desktop size on a phone reads as
+   * not responding at all); above 1440 they ride the same proportional ramp as
+   * everything else. */
+  --fluid-control: calc(16 * var(--px)); /* 16 -> 21.33 */
+  --fluid-micro: calc(10 * var(--px)); /* 10 -> 13.33 */
+}
+
+/* The other half of the ramp: the same tokens, carried from their 640px size up
+   to the Figma size at 1440. Below 640 they sit on the minimum — the phone tier
+   the design specifies. Redefining the token rather than each rule means every
+   consumer follows without a second declaration. */
+@media (max-width: 1440px) {
+  :root {
+    /* Layout gutter and measure, carried from the 640px tier up to the Figma
+     * value at 1440 — 24px/592px at 640, 200px/1040px at 1440. Without this
+     * second ramp the clamp above would hold a 200px MINIMUM all the way down
+     * and leave a 768px screen with 368px of content between two 200px
+     * gutters. The pair keeps the same `2 * margin + container == viewport`
+     * invariant at every width. Sections that set their own padding inside the
+     * narrower media queries below still win, as before. */
+    --grid-margin: clamp(24px, -116.8px + 22vw, 200px);
+    --fluid-container: clamp(592px, 233.6px + 56vw, 1040px);
+
+    --fluid-display: clamp(3.38068rem, -2.41477rem + 14.4886vw, 10.625rem); /* 54.09 -> 170 */
+    --fluid-hero: clamp(2.5rem, 1.3rem + 3vw, 4rem); /* 40 -> 64 */
+    --fluid-h2: clamp(1.225rem, 0.805rem + 1.05vw, 1.75rem); /* 19.6 -> 28 */
+    /* One ramp for the three section sub-headings: `.about-heading`,
+     * `.portfolio-subheading` and `.focus-roster-heading`. They read as a set —
+     * each is the line under its section's display type that says what the
+     * section is — and they agree at 28px at 1440, so they have to agree at
+     * every other width too.
+     *
+     * They did not. The first two rode `--fluid-h2`, the third rode a ramp
+     * private to `.section-focus`, and `.about-heading` rode `--about-px` from
+     * 1025 up; three curves through the same endpoint. Measured at 1025 they
+     * were 20.86 / 23.64 / 23.80.
+     *
+     * The curve kept is the Focus one, `clamp(23.8px, 13.426px + 1.0121vw,
+     * 28px)`, because it was the one derived from the section's own measure
+     * rather than inherited from a general-purpose token, and it is the largest
+     * of the three — these are sub-headings that had got close to body copy at
+     * the narrow end. Below 1025 the floor would freeze them, so the block
+     * after this one hands them to `--fluid-h4`, which carries its own 640 and
+     * phone tiers. The two meet within 0.12px at the 1024/1025 boundary. */
+    --fluid-subhead: clamp(23.8px, 13.426px + 1.0121vw, 28px); /* 23.8 -> 28 */
+    --fluid-h3: clamp(1.625rem, 1.325rem + 0.75vw, 2rem); /* 26 -> 32 */
+    --fluid-h4: clamp(1.375rem, 1.175rem + 0.5vw, 1.625rem); /* 22 -> 26 */
+    --fluid-h5: clamp(1.25rem, 1.05rem + 0.5vw, 1.5rem); /* 20 -> 24 */
+    --fluid-body: clamp(1.125rem, 1.025rem + 0.25vw, 1.25rem); /* 18 -> 20 */
+    --fluid-body-md: clamp(1.0625rem, 1.0125rem + 0.125vw, 1.125rem); /* 17 -> 18 */
+    --fluid-body-sm: clamp(0.9375rem, 0.8875rem + 0.125vw, 1rem); /* 15 -> 16 */
+    --fluid-label: clamp(0.8125rem, 0.7625rem + 0.125vw, 0.875rem); /* 13 -> 14 */
+    --fluid-label-sm: clamp(0.6875rem, 0.6375rem + 0.125vw, 0.75rem); /* 11 -> 12 */
+    --fluid-control: clamp(0.875rem, 0.775rem + 0.25vw, 1rem); /* 14 -> 16 */
+    --fluid-micro: clamp(0.5625rem, 0.5125rem + 0.125vw, 0.625rem); /* 9 -> 10 */
+  }
+}
+
+/* Below the desktop breakpoint the sub-headings join `--fluid-h4` rather than
+   keeping a ramp of their own: h4 already carries the 640 and phone tiers this
+   size needs, and it is the step the design puts them on there. Written as a
+   reference, not a copy, so the two stay in step if h4 is re-cut. */
+@media (max-width: 1024px) {
+  :root {
+    --fluid-subhead: var(--fluid-h4);
+  }
+}
+
+/* Third tier: 360 -> 640.
+ *
+ * The ramp above bottoms out at exactly 640px — every one of its clamps reaches
+ * its floor there — so from 640 down to a 360px phone the type FROZE while the
+ * measure kept shrinking, 592px to 312px. Text therefore grew relative to its
+ * column instead of adapting to it, and the hierarchy collapsed with it: at
+ * 1440 the section heading is 4.2x the roster heading, at 390 it was 1.6x.
+ *
+ * Sizes fall more slowly than the measure on purpose — a heading scaled
+ * strictly in proportion would be 15px on a phone. The point is that they keep
+ * moving, and that the steps stay apart from each other.
+ *
+ * Each clamp is built to meet the tier above exactly at 640, so there is no
+ * jump at the boundary. */
+@media (max-width: 640px) {
+  :root {
+    /* The phone tier separates its sections with a flat 40, not the 64 the
+       ramp bottoms out at. Asked for directly. It is a floor, so the ramp
+       above still governs everything wider. */
+    --section-pad-block: 40px;
+
+    --fluid-display: clamp(2.41477rem, 1.17288rem + 5.5195vw, 3.38068rem); /* 38.64 -> 54.09 */
+    --fluid-hero: clamp(1.875rem, 1.07143rem + 3.5714vw, 2.5rem); /* 30 -> 40 */
+    --fluid-h2: clamp(1.00625rem, 0.725rem + 1.25vw, 1.225rem); /* 16.1 -> 19.6 */
+    --fluid-h3: clamp(1.3125rem, 0.91071rem + 1.7857vw, 1.625rem); /* 21 -> 26 */
+    --fluid-h4: clamp(1.1875rem, 0.94643rem + 1.0714vw, 1.375rem); /* 19 -> 22 */
+    --fluid-h5: clamp(1.0625rem, 0.82143rem + 1.0714vw, 1.25rem); /* 17 -> 20 */
+    /* Every size of running text is a flat 14px on a phone, by request — body
+     * copy, the roster rows, the numbered items, article paragraphs, the
+     * portfolio rows. The three steps that separate them from 640 up collapse
+     * into one here, so this tier no longer meets the one above it at 640: at
+     * 641 they step back to 18 / 17 / 15. Kept in `rem` so the text still
+     * answers the reader's own font-size setting. */
+    --fluid-body: 0.875rem; /* 14 */
+    --fluid-body-md: 0.875rem; /* 14 */
+    --fluid-body-sm: 0.875rem; /* 14 */
+    --fluid-label: clamp(0.75rem, 0.66964rem + 0.3571vw, 0.8125rem); /* 12 -> 13 */
+    --fluid-label-sm: clamp(0.65625rem, 0.61607rem + 0.1786vw, 0.6875rem); /* 10.5 -> 11 */
+    --fluid-control: clamp(0.8125rem, 0.73214rem + 0.3571vw, 0.875rem); /* 13 -> 14 */
+    --fluid-micro: clamp(0.53125rem, 0.49107rem + 0.1786vw, 0.5625rem); /* 8.5 -> 9 */
+  }
+}
+
+/* =============================================================================
+ * BASE LAYER — page-level resets, background and typography.
+ *
+ * Ported from the base/global rules of `_legacy/src/styles/global.css` (only the
+ * page-level pieces needed so the document renders correctly). Section styles,
+ * the custom cursor, wipe/reveal animations and glassmorphism are deliberately
+ * NOT ported here — those belong to the EFFECTS LAYER / section tasks below.
+ * ========================================================================== */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-surface-page);
+    /* Default ink for anything that does not set its own colour. This was
+     * #ffffff back when <body> was teal; on the white surface that made the
+     * document's inherited text invisible. Every section happens to set its
+     * own colour, so nothing was visibly broken — but CMS rich text, a
+     * <noscript>, or any new element would have rendered white on white. */
+    color: var(--color-text-primary, #04212b);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    /* Establish ONE isolated stacking group at <body> so the custom cursor
+     * (a direct child of <body> using `mix-blend-mode: difference`) blends
+     * against the FLATTENED page. The About section paints a `backdrop-filter`
+     * blur overlay, which forms its own isolated group; without this the cursor
+     * blends against that group's empty backdrop and the white arrow vanishes
+     * over the bright cloud. Isolating <body> flattens it before the blend. */
+    isolation: isolate;
+  }
+}
+
+/* Hide the browser scrollbar everywhere — the page and any inner scroll
+ * containers (sections) — while keeping scrolling fully functional. Unlayered
+ * and universal so it always wins and covers every scroller. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge / IE */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chrome / Safari / Chromium Edge */
+}
+
+/* =============================================================================
+ * EFFECTS LAYER (intentionally empty for now)
+ *
+ * Bespoke visual effects from the legacy landing will be ported here in later
+ * migration tasks. Reserved sub-sections:
+ *   - Custom crosshair cursor + cyan gradient lines (`--color-brand-cyan` alphas)
+ *   - Reveal/wipe animations via `@property --wipe` + conic-gradient masks
+ *   - Keyframe text shimmer / word-reveal animations
+ *   - Glassmorphism surfaces (backdrop-blur cards, tags, buttons)
+ *
+ * Do NOT inline the legacy landing CSS here yet — that happens in dedicated
+ * later tasks. This block is a placeholder anchor only.
+ * ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+ * HERO (Task 9)
+ *
+ * Ported verbatim from `_legacy/src/styles/global.css` Hero rules. Layout +
+ * typography live here as plain CSS keyed off the legacy class names that
+ * `Hero.tsx` renders.
+ *
+ * PROGRESSIVE ENHANCEMENT NOTE: the legacy stylesheet hid `.word` and
+ * `.logo-marquee` (opacity:0) as *animation initial states*. We deliberately do NOT bake those hidden states into CSS — the
+ * server renders plain, fully-visible text, and the entry animation applies its
+ * own initial state via `gsap.set()` after hydration. This keeps SSR output
+ * readable and makes the `prefers-reduced-motion` resting state correct with no
+ * extra work. Navbar / clock / cursor rules are intentionally excluded (their
+ * own tasks). `cursor: none` is part of the custom-cursor task and is omitted.
+ * -------------------------------------------------------------------------- */
+
+/* Full-screen fixed WebGL background canvas (HeroShader.tsx). Decorative,
+ * sits behind all content (z-index 0) and never intercepts pointer events. */
+#canvas {
+  /* ABSOLUTE (not fixed) so the hero shader is scoped to the Hero section and
+   * scrolls away with it. Fixed made it bleed behind EVERY section (a second
+   * shader layer showing through under every later section). .hero is
+   * position:relative; height:100vh; width:100% → this fills exactly the
+   * viewport-sized hero box. */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  /* The shader draws WHITE elements on black; screen-blending over the cloud
+   * photo (.hero-bg) lightens only — black areas leave the photo untouched. */
+  mix-blend-mode: screen;
+}
+
+/* Top gradient overlay */
+/* Cloud photo behind the (now transparent) WebGL shader — the shader's rays/dots
+ * animate over it. Fixed like #canvas so it sits directly behind the shader. */
+.hero-bg {
+  /* ABSOLUTE (not fixed) — scoped to the Hero section so the cloud photo no
+   * longer shows under later sections. */
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/images/hero-bg.webp') center top / cover no-repeat;
+  pointer-events: none;
+}
+/* White fade at the bottom of the hero so it blends into the next section.
+ *
+ * The stop list is Figma 544:437 (the Hero frame's own `background` layer),
+ * transcribed rather than approximated. It was a straight two-stop ramp over
+ * the bottom 38%, and a straight ramp is the one thing this is not: the design
+ * holds the white almost solid for the first third of its travel (0.93 still
+ * at 11.3%) and then falls away quickly. Linear interpolation reaches 0.5 at
+ * the midpoint where the design is still at 0.63, so ours thinned out early
+ * and left a visible edge where the white finally arrived.
+ *
+ * Spread over the whole hero rather than a bottom strip, because the design's
+ * percentages are of the full 900px frame — 34.444% is where it reaches zero,
+ * and the remaining two thirds are transparent anyway. That also means the
+ * ramp keeps the design's proportions at any viewport height instead of being
+ * pinned to a strip whose own height was a separate guess. */
+.hero .bottom-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    #ffffff 1.7222%,
+    rgba(255, 255, 255, 0.992) 5.5801%,
+    rgba(255, 255, 255, 0.968) 8.7194%,
+    rgba(255, 255, 255, 0.93) 11.251%,
+    rgba(255, 255, 255, 0.879) 13.285%,
+    rgba(255, 255, 255, 0.819) 14.932%,
+    rgba(255, 255, 255, 0.749) 16.303%,
+    rgba(255, 255, 255, 0.672) 17.508%,
+    rgba(255, 255, 255, 0.589) 18.658%,
+    rgba(255, 255, 255, 0.503) 19.863%,
+    rgba(255, 255, 255, 0.415) 21.234%,
+    rgba(255, 255, 255, 0.326) 22.882%,
+    rgba(255, 255, 255, 0.238) 24.916%,
+    rgba(255, 255, 255, 0.154) 27.447%,
+    rgba(255, 255, 255, 0.074) 30.587%,
+    rgba(255, 255, 255, 0) 34.444%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero {
+  position: relative;
+  height: 100vh;
+  /* Where the hero's content starts, matching every section below it.
+   *
+   * The sections centre a capped measure — `max-width: var(--fluid-container);
+   * margin: 0 auto` — while the hero was pinned by `padding: 0 var(--grid-margin)`.
+   * Those agree only while `2 * margin + container == viewport`, which the two
+   * ramps hold up to 1920 and not beyond: above it both hit their ceilings, the
+   * measure stops growing and re-centres, and the hero stays put. Measured, the
+   * hero heading sat 140px left of the About heading at 2200 and 320px left at
+   * 2560 — the same left edge on paper, visibly different on a wide display.
+   *
+   * `max()` reproduces what the sections compute, without a wrapper element:
+   * below 1920 the gutter wins and nothing changes, above it the centring term
+   * takes over. `100%` rather than `100vw` on purpose — `100vw` counts the
+   * scrollbar, so it would reintroduce the same drift it is here to remove. */
+  --hero-inset: max(
+    var(--grid-margin, 200px),
+    calc((100% - var(--fluid-container, 1040px)) / 2)
+  );
+}
+
+/* Content */
+.hero .content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100vh;
+  padding: 0 var(--hero-inset);
+  text-align: left;
+  gap: var(--grid-gutter, 24px);
+}
+
+/* Scroll cue at the bottom of the hero (Figma 330:653): "EXPLORE" + a 32px
+ * down-arrow. Sits above `.bottom-fade` (z-index 1) so the white
+ * gradient does not wash it out. Starts hidden pre-hydration — it is revealed
+ * at the end of Hero.tsx's entrance timeline, and the reduced-motion branch
+ * there sets opacity:1 immediately. */
+/* Shared "EXPLORE ... v" cue. Figma Option 2 uses this mono label + 32px arrow
+   as a recurring primitive rather than a hero ornament — it also stands in for
+   About's CTA and as Portfolio's secondary action. Defined once here; the
+   per-section rules below only place it and decide whether it is interactive. */
+.explore-cue {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+
+.explore-cue-label {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  /* Figma draws this label in a 17px box at 14px — AUTO for PP Supply Mono is
+     17/14 = 1.21. `normal` was giving 22px, a 1.57 leading, which is what put
+     the cue's box 5px taller than the design's everywhere it is used. 1.2 is
+     the value the other mono labels on the page already carry. */
+  line-height: 1.2;
+  letter-spacing: 0.42px;
+  text-transform: uppercase;
+  color: var(--color-text-primary, #04212b);
+  white-space: nowrap;
+}
+
+.explore-cue-arrow {
+  display: block;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+}
+
+/* Gentle nudge so the cue reads as an affordance rather than a label. */
+@media (prefers-reduced-motion: no-preference) {
+  .explore-cue-arrow {
+    animation: hero-explore-nudge 2.4s ease-in-out infinite;
+  }
+}
+
+/* Hero: centred at the bottom of the viewport, decorative, revealed by GSAP. */
+.hero-explore {
+  position: absolute;
+  bottom: 56px;
+  /* Flush with the heading's left edge: the same inset, less the cue's own 8px
+     padding so it is the label ink that lines up, not the box. */
+  left: calc(var(--hero-inset) - 8px);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* The two interactive cues: About's carries the reader into Portfolio, and
+   Portfolio's carries them on to "How we work". Each sits flush with the
+   column it belongs to; only About's needs its box pulled back over the
+   primitive's own padding, since it starts a line. */
+.about-explore,
+.portfolio-explore {
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.about-explore {
+  margin-left: -8px; /* cancel .explore-cue's padding so the label sets flush left */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .about-explore:hover,
+  .portfolio-explore:hover {
+    opacity: 0.6;
+  }
+}
+
+.about-explore:focus-visible,
+.portfolio-explore:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes hero-explore-nudge {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  85% {
+    transform: translateY(4px);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-explore {
+    bottom: 32px;
+  }
+}
+
+/* Heading */
+.hero .content h1 {
+  font-family: var(--font-sans);
+  /* Figma 448:1649 sets this as a TWO-line block, and the headline admits only
+     one two-line split: "...on their journey" / "to build generational
+     companies". This used to be capped at 4.2103vw because that longest line
+     measured 1098px at 64px against the 1040px the 200px gutters leave — the
+     comment here already blamed "Figma's own instance of the face, which
+     carries the opsz axis, and sets narrower". The axis now ships (see
+     layout.tsx), the line measures 996px at 64px, and the cap is gone: the
+     headline reads at the design's own 64px at 1440 and stays two lines from
+     1025 up. */
+  font-size: var(--fluid-label);
+  font-weight: 500;
+  /* 166px over two lines = 83px each, and no tracking. The old 1.25/0.01em
+     pair came from the centred composition. */
+  line-height: 1.3;
+  max-width: var(--fluid-container);
+  color: #04212b;
+  letter-spacing: 0;
+}
+
+/**
+ * Below 1024 the hero heading leaves the shared `--fluid-hero` ramp and takes
+ * its own, smaller one.
+ *
+ * Scoped here rather than changed in the token because the token is right for
+ * everything else that reads it. The other three headings on that ramp —
+ * `.blog-title`, `.article-title`, `.process-heading` — are short: measured at
+ * 390px they occupy one and two lines respectively and read fine at 40px. This
+ * headline is thirteen words and centred, so the same size wrapped it to NINE
+ * lines and 450px of a 780px screen, pushing everything else below the fold.
+ *
+ * Two segments meeting at 1024 rather than one ramp to 1440: a single ramp from
+ * 30px at 390 lands on 42px at 768, which is barely under the 43.8px it was
+ * already doing — the tablet, which is half the complaint, would not have
+ * moved. 1440 stays at 64px, which is what Figma specifies.
+ *
+ *   390 -> 30px    768 -> 38px    1024 -> 44px    1440 -> 64px (unchanged)
+ */
+@media (max-width: 1024px) {
+  .hero .content h1 {
+    font-size: var(--fluid-label); /* 30 -> 44 */
+  }
+}
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .hero .content h1 {
+    /* Picks up where the block above stops, so there is no step at 1024. It
+       carried the same 4.2103vw cap as the base rule until the opsz axis
+       started shipping; the headline holds two lines on the bare ramp now. */
+    font-size: var(--fluid-label); /* 44 -> 64 */
+  }
+}
+.hero .word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------------------
+ * NAVBAR + LIVE CLOCK (Task 10)
+ *
+ * Ported from `_legacy/src/styles/global.css` (navbar / clock rules). The
+ * navbar starts at opacity:0 and is faded in by GSAP after hydration
+ * (`Navbar.tsx`); under reduced-motion the component sets opacity:1 inline so
+ * the resting state is correct without animation.
+ *
+ * Per-context `cursor: none` rules from the legacy stylesheet are intentionally
+ * dropped — hiding the native cursor is handled globally by the `.cursor-none`
+ * toggle (see CURSOR section) and only while the custom cursor is active.
+ * -------------------------------------------------------------------------- */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  padding: 16px 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+  opacity: 0;
+}
+/* The lockup is two files — see Navbar.tsx. Widths come straight out of the
+   source viewBox at 28px tall: mark 40.31/33·28 = 34.2, gap 15.4/33·28 = 13.1,
+   wordmark 112.3/33·28 = 95.3, total 142.6 — the same width the single file
+   rendered at. */
+.navbar .logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 28px; /* Figma 311:746: 140×27.5 */
+  width: 142.6px;
+}
+.navbar .logo-mark {
+  flex: none;
+  width: 34.2px;
+  height: 28px;
+}
+/* Out of flow on purpose: the link's width is what animates, and an in-flow
+   wordmark would be squeezed by it. Absolute, it only fades. */
+.navbar .logo-word {
+  position: absolute;
+  left: 47.3px; /* 34.2 mark + 13.1 gap */
+  top: 0;
+  width: 95.3px;
+  height: 28px;
+}
+
+/* --- Collapse to the mark past the hero (tablet and up) ------------------ */
+/* Was desktop-only, on the reasoning that a tablet header is tight enough that
+   the lockup is the only thing identifying the page. Asked for on tablet too,
+   so the floor is the phone tier's ceiling now. Keep this query and the
+   matchMedia in Navbar.tsx on the same number. */
+@media (min-width: 641px) {
+  .navbar .logo {
+    transition: width 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .navbar .logo-word {
+    transform-origin: left center;
+    transition:
+      opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+      transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .navbar .logo.is-compact {
+    width: 34.2px;
+  }
+  .navbar .logo.is-compact .logo-word {
+    opacity: 0;
+    /* Slides back under the mark rather than just dissolving, so the wordmark
+       reads as tucking away instead of blinking out. */
+    transform: translateX(-8px);
+    /* opacity:0 alone still takes clicks. */
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion means gentler, not absent: the fade still explains the
+     change, the slide and the width animation are what get dropped. */
+  .navbar .logo {
+    transition: none;
+  }
+  .navbar .logo-word {
+    transition: opacity 150ms ease;
+  }
+  .navbar .logo.is-compact .logo-word {
+    transform: none;
+  }
+}
+/* Everything below the desktop breakpoint pulls the header in to a flat 16px
+   gutter, rather than the 56px it carries on desktop. The legal bar gets the
+   same treatment, in its own section of this file — it has to sit AFTER the
+   `.section-footer` shorthand or the shorthand wins on source order. */
+@media (max-width: 1024px) {
+  .navbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* On a phone the header belongs to the hero, not to the viewport.
+ *
+ * It used to be `fixed` here like everywhere else, with a scroll-direction
+ * effect in Navbar.tsx that tucked it away going down and slid it back in going
+ * up. That effect is gone: asked for directly, and the reasoning behind it
+ * already pointed this way — its own comment said "the hero IS the header's
+ * context, the logo is part of that composition", which `absolute` states
+ * outright instead of reconstructing with a scroll listener.
+ *
+ * `absolute` with no positioned ancestor resolves against the initial
+ * containing block, and `.navbar` is the first thing in the document, so
+ * `top: 0` is the top of the hero. It is out of flow either way, so nothing
+ * below it moves. Above 640 the bar stays `fixed` — on a laptop an 80px header
+ * is not a share of the screen worth reclaiming, and the lockup still collapses
+ * to its mark past the hero. */
+@media (max-width: 640px) {
+  .navbar {
+    position: absolute;
+  }
+}
+
+.navbar .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.navbar .time-display {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  color: #04212b;
+  letter-spacing: 0.42px;
+  text-transform: uppercase;
+  line-height: 1.2; /* mono AUTO, same as every other label */
+  text-align: left; /* Figma 311:748: left-aligned two-line block */
+}
+
+/**
+ * The San Francisco clock is desktop-only.
+ *
+ * It is decorative — `aria-hidden`, no information the page needs — and on a
+ * phone it was actively in the way: measured at 390px the gap between the
+ * wordmark and the clock is 0px, so "SAN FRANCISCO" printed straight over the
+ * word "Mento". The collision clears around 480px, but the cut is at 640
+ * because that is where this stylesheet already draws the line between mobile
+ * and everything else, and a decorative clock squeezed against a burger menu
+ * is not worth the extra breakpoint.
+ *
+ * `display: none` rather than `visibility: hidden`: the clock's flip animation
+ * runs on a timer, and leaving the element laid out would keep it ticking
+ * against nothing.
+ */
+@media (max-width: 640px) {
+  .navbar .time-display {
+    display: none;
+  }
+}
+.navbar .time-display div:first-child {
+  opacity: 1;
+}
+.navbar .time-display div:last-child {
+  opacity: 0.6;
+}
+
+/* Flip clock digits */
+/* 1.2em, four times over plus once in Navbar.tsx, is one number: the height of
+   a single mono line. The digit window is exactly one line tall and the track
+   is translated by whole lines, so all five have to move together. It is the
+   same 1.2 the rest of the mono labels carry — this was the last 1.4 left. */
+.navbar .flip-clock {
+  display: inline-flex;
+  align-items: center;
+  height: 1.2em;
+}
+.navbar .flip-digit {
+  display: inline-block;
+  position: relative;
+  width: 0.65em;
+  height: 1.2em;
+  overflow: hidden;
+}
+.navbar .flip-digit-inner {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.1, 1);
+}
+.navbar .flip-digit-inner span {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2;
+}
+.navbar .flip-sep {
+  width: 0.4em;
+  text-align: center;
+}
+.navbar .flip-ampm {
+  margin-left: 0.35em;
+}
+
+/* Smooth anchor scrolling for the nav menu, with offset so target sections
+   aren't hidden under the fixed header (navbar top 38px + height ≈ 96px,
+   matching the .article-h2 convention). Disabled under reduced motion. */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+#sectionAbout,
+#sectionFocus,
+#sectionPortfolio {
+  scroll-margin-top: 88px;
+}
+
+/* -----------------------------------------------------------------------------
+ * REUSABLE PRIMITIVES — section-agnostic building blocks on semantic tokens.
+ * Built so new sections compose these instead of cloning per-section rules.
+ * Token VALUES come from Figma (see tokens.generated.css). Each var() has a
+ * literal fallback so the primitive is robust if a token name shifts.
+ * -------------------------------------------------------------------------- */
+.pill-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill, 4px);
+  background: var(--color-pill-tag-bg, rgba(0, 0, 0, 0.1));
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  letter-spacing: var(--label-tracking, 0.42px);
+  text-transform: uppercase;
+  color: var(--color-text-primary, #04212b);
+}
+.blog-filter:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 2px;
+}
+
+/* Below the fixed 448px card width, stack the row into a column and scale each
+ * card down uniformly rather than reflowing its pixel-fixed internal layout
+ * (globe/stats/desc are all absolutely positioned). The negative margin
+ * compensates for the untouched layout box left behind by the scale transform. */
+
+/* Reduced-motion resting state: no scrub timeline runs, so collapse the pin and
+ * stack the header above the (already normal-flow) card row instead of
+ * overlapping them — everything stays statically visible, nothing cross-fades.
+ * Text is already fully visible (server-rendered plain text; the script no-ops). */
+
+/* -----------------------------------------------------------------------------
+ * INTRO — Section 2 (Figma 151:3987). White block: display heading + layered
+ * visual card + pill button.
+ * -------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * ABOUT — Section 3 (Figma 311:439).
+ * White surface with a soft motion-blur backdrop. Two-column grid: thesis
+ * heading, paragraphs and an EXPLORE cue on the left; a vertical
+ * auto-scrolling strip of portfolio-company logos on the right.
+ * Built on semantic tokens.
+ * -------------------------------------------------------------------------- */
+.section-about {
+  position: relative;
+  z-index: 3;
+  background: var(--color-surface-page, #ffffff);
+  padding: var(--section-pad-block) var(--grid-margin, 200px);
+  overflow: hidden;
+}
+
+/* Soft backdrop image fading down into the white surface.
+ *
+ * The stops are traced from the design, not invented. Sampling the edge columns
+ * of Figma 448:1662 gives a brightness swing of only ~14/255 across the whole
+ * frame: white until ~10%, deepest at 30-40%, back to white by ~90%. Ours swung
+ * 34 — the artwork was roughly twice the design's strength and surfaced three
+ * times too early, which is why the boundary with the hero read as a hard
+ * transition even though a pixel scan finds no step in it. Lengthening the ramp
+ * made it worse (44); the fix is intensity and placement, not duration.
+ *
+ * Each alpha below is solved from the design's own curve: at overlay `a` the
+ * artwork contributes (1-a) of its full ~38-unit swing, so 0.64 at the deepest
+ * point reproduces Figma's 14. */
+.about-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-page, #ffffff) 0%,
+      var(--color-surface-page, #ffffff) 10%,
+      rgba(255, 255, 255, 0.89) 20%,
+      rgba(255, 255, 255, 0.65) 30%,
+      rgba(255, 255, 255, 0.64) 40%,
+      rgba(255, 255, 255, 0.77) 50%,
+      rgba(255, 255, 255, 0.87) 60%,
+      rgba(255, 255, 255, 0.9) 70%,
+      rgba(255, 255, 255, 0.97) 80%,
+      var(--color-surface-page, #ffffff) 90%
+    ),
+    url('/images/about-backdrop.webp') top center / 100% auto no-repeat;
+}
+
+.about-container {
+  position: relative;
+  z-index: 1;
+  max-width: var(--fluid-container);
+  margin: 0 auto;
+}
+
+.about-grid {
+  display: grid;
+  /* The copy column drives this split. Figma sets the heading as TWO lines,
+     which needs 718px at 40px in our Inter; the old 294px logo column plus a
+     100px gutter left only 646px inside the 1040px measure and broke it to
+     three. Figma affords the pair 1123px by letting the logo strip run out to
+     a 120px right margin — we hold the 200px gutter instead and take the
+     difference out of the strip, which has room to give: its logos are capped
+     at 150px wide inside it.
+     The strip gave up another 36px for the same reason. The first thesis
+     paragraph measures 758.6px of ink at 20px, and a 230px strip left the copy
+     730 — so it wrapped, stranding `Model".` alone on a second line. The copy
+     the CMS holds is simply longer than the measure the frame allots it, and
+     the strip is the only slack in the row: 194px still clears the 150px logo
+     cap by 44. 194px strip + 80px gutter leaves the copy 766, which is 7px of
+     headroom over the paragraph rather than the 1px a 200px strip would give.
+     Below 1440 the floor takes over at 180 (was 200), so the range down to the
+     tablet breakpoint gains 20px of copy and nothing else moves. */
+  grid-template-columns: minmax(0, 1fr) clamp(180px, 13.4722vw, 258.67px);
+  column-gap: clamp(56px, 5.5556vw, 107px);
+  /* Default (stretch): both columns take the height of the tallest one (the
+     logo strip) — .about-intro then uses that height to anchor its CTA row
+     near the bottom, matching the logo strip's bottom edge. */
+}
+
+/* ---------------------------------------------------------------------------
+ * Left: heading + thesis paragraphs (top) and the EXPLORE cue (anchored toward
+ * the bottom, matching the logo strip's vertical span).
+ * -------------------------------------------------------------------------- */
+.about-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: clamp(820px, 56.9444vw, 1093px);
+}
+
+.about-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+.about-copy-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.about-heading {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* Figma 549:507 — 28px at 1440 */
+  font-weight: 500;
+  line-height: 1.3;
+  /* The frame breaks this into two EVEN lines — 486 and 485 of ink — which
+   * natural wrapping does not reproduce: at the 730px column we get 707/269,
+   * and around 900px it strands "startups" alone on a line at 88px. Balancing
+   * lands 489/486 at the design width and holds the frame's own break, after
+   * "early-stage", at every width down to 360. A hard <br> would do it too, at
+   * the cost of a break frozen at one measure. */
+  text-wrap: balance;
+  color: var(--color-text-primary, #04212b);
+  margin: 0;
+}
+
+.about-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.about-para {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  font-weight: 300;
+  /* 1.2, not 1.4 — Figma 549:589/549:590 renders the body copy at Inter
+     Light (300) with a 24px line pitch at 20px font size (24/20 = 1.2),
+     confirmed by measuring rendered ink across four lines against the frame. */
+  line-height: 1.2;
+  /* 80% body text. Carried on the colour's alpha rather than `opacity`,
+     because the entrance animation tweens `opacity` to 1 and would wipe out a
+     property-level value the moment the paragraph reveals. 5.75:1 on white. */
+  color: rgba(4, 33, 43, 0.8);
+  /* 766px at 1440 — the whole copy column, not the 742 the frame draws. The
+     frame's measure is 16px short of the first paragraph's 758.6px of ink, so
+     at 742 it wrapped whatever the column underneath it was doing. */
+  max-width: clamp(560px, 53.1944vw, 1021.33px);
+  margin: 0;
+}
+
+
+.about-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------------------------
+ * The copy column scales; it does not re-lay itself out.
+ *
+ * This section's skeleton is proportional across the whole two-column range.
+ * `--fluid-container`, the logo column and the column gap are each one vw ramp,
+ * so the copy column runs 570.7px at 1025, 766px at the design width and
+ * 1021.3px at the 1920 ceiling — one continuous curve with no step in it.
+ *
+ * The copy itself was not on that curve. Above 1440 its type rode `--fluid-h2`
+ * and `--fluid-body` (x1.25 and x1.125 against the layout's x1.333) and its
+ * gaps were flat pixels; below 1440 the mismatch is far worse, because the
+ * narrow tier deliberately compresses the type scale — body travels 18 -> 20
+ * while the column travels 570.7 -> 766. So widening the window did not enlarge
+ * the block, it reflowed it: measured, the second paragraph dropped from five
+ * lines to four around 1150 and the third from two to one around 1350.
+ *
+ * `--about-px` is the fix and it is derived, not tuned: the copy column divided
+ * by the 766px it measures at the design width. One unit is therefore exactly
+ * 1px at 1440, 0.745px at 1025 and 1.3333px from 1920 on — identical to the
+ * global `--px` everywhere the two overlap, which is why the values below are
+ * unchanged at and above the design width. Every value is the Figma number at
+ * 1440, so the design value stays readable in the source.
+ *
+ * Scoped to `.section-about`, and to the two-column regime. The shared tokens
+ * cannot take this treatment: `--fluid-micro` is 10px at 1440 and would be
+ * 7.1px at 1024, which is why the rest of the page keeps its gentler ramp below
+ * the design width. This block's type bottoms out at 14.9px body and 20.9px
+ * heading at 1025, which is the whole reason it can be done here.
+ *
+ * Below 1025 the section stacks — one column, the logo strip on its side — and
+ * the copy takes the full container rather than 570px of it. That is a
+ * different composition, not a smaller one, and it keeps the narrow tier.
+ *
+ * Source order is load-bearing: single-class selectors overriding single-class
+ * selectors, so this block stays after the base rules above.
+ * -------------------------------------------------------------------------- */
+@media (min-width: 1025px) {
+  .section-about {
+    /* The copy column, restated so the type can be tied to it. Keep the two
+       clamps identical to `.about-grid` above — they are the same column. */
+    --about-col: calc(
+      var(--fluid-container) - clamp(180px, 13.4722vw, 258.67px) - clamp(56px, 5.5556vw, 107px)
+    );
+    --about-px: calc(var(--about-col) / 766);
+  }
+
+  .about-para {
+    font-size: var(--fluid-label);
+    /* The measure IS the column, so the line never gains characters. */
+    max-width: calc(766 * var(--about-px));
+  }
+
+  .about-copy {
+    gap: calc(32 * var(--about-px));
+  }
+
+  .about-copy-text {
+    gap: calc(16 * var(--about-px));
+  }
+
+  .about-body {
+    gap: calc(12 * var(--about-px));
+  }
+
+  .about-cta-row {
+    gap: calc(16 * var(--about-px));
+  }
+
+  /* The EXPLORE cue is a shared primitive; the global rules put it on `--px`,
+     which only exists above 1440. Section-scoped copies carry it down through
+     the rest of the two-column range, and agree with the global ones exactly
+     wherever both apply. */
+  .section-about .explore-cue {
+    padding: calc(8 * var(--about-px));
+  }
+
+  .section-about .explore-cue-label {
+    font-size: var(--fluid-label);
+    letter-spacing: calc(0.42 * var(--about-px));
+  }
+
+  .section-about .explore-cue-arrow {
+    width: calc(32 * var(--about-px));
+    height: calc(32 * var(--about-px));
+  }
+
+  .about-explore {
+    /* Still cancelling the cue's own padding so the label sets flush left. */
+    margin-left: calc(-8 * var(--about-px));
+  }
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Right: vertical auto-scrolling strip of portfolio-company logos ("backed
+ * by" ticker). The track renders the logo list twice back to back and loops
+ * by translating exactly -50% — a seamless infinite scroll. A mask fades the
+ * top/bottom edges so logos appear to emerge/dissolve rather than clip hard.
+ * -------------------------------------------------------------------------- */
+.about-logos {
+  position: relative;
+  /* Fills its grid column rather than restating the column's 294px, which
+     capped the strip at 1920 while the column went on to 307 and quietly bent
+     the mark-to-column ratio from 65% to 68%. */
+  width: 100%;
+  /* Everything inside this strip used to be fixed px while its grid column
+     scaled (`clamp(200px, 15.9722vw, 307px)`), so on a wide desktop the column
+     grew and the logos did not — the strip just gained empty space around
+     unchanged marks. Each value below rides the SAME ramp as the column, so the
+     proportion Figma 448:1662 draws at 1440 (294px column, 141px item, 37px
+     gap, marks 119-133px wide) holds at every width. Floors and ceilings land
+     where the column's own do, at ~1252 and 1920. */
+  /* 630px at 1440, down from 760. The strip sets the height of BOTH grid
+     columns (the copy column is stretched to it and uses `space-between` to
+     park the EXPLORE cue at the bottom), so 130px of strip was 130px of empty
+     column between the last paragraph and the cue: 338px of it against the
+     187px Figma 448:1662 draws. At 630 the section stands 934px tall against
+     the design's 900 — the same 1.04 ratio Portfolio and Philosophy already
+     run at, which is what "in line with the others" means here. */
+  height: clamp(548px, 43.75vw, 840px);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+.about-logo-track {
+  display: flex;
+  flex-direction: column;
+  /* Duration is set per-render from the logo count (see AboutContent) so the
+     strip holds a constant speed as the portfolio grows. The fallback matches
+     the original four-logo timing. */
+  animation: about-logo-scroll var(--about-logo-duration, 19s) linear infinite;
+}
+
+/* Spacing lives on each item (not the track's `gap`) so every item — including
+   the last one of each duplicated set — carries the same trailing 37px. That
+   makes exactly half the track's total height equal one full set, so the
+   -50% loop reset lands on an identical frame with no visible jump. */
+.about-logo-item {
+  flex: 0 0 auto;
+  height: clamp(122px, 9.7222vw, 187px); /* 140px at 1440 */
+  margin-bottom: clamp(32px, 2.5694vw, 49px); /* 37px at 1440 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-logo-item img {
+  max-width: clamp(130px, 10.4167vw, 200px); /* 150px at 1440 */
+  max-height: clamp(61px, 4.8611vw, 93px); /* 70px at 1440 */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+@keyframes about-logo-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* Horizontal counterpart, used below 1024px where the strip sits under the
+   copy instead of beside it. */
+@keyframes about-logo-scroll-x {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* The reduced-motion opt-out for this track lives at the very end of the About
+   section, not here: the responsive block below re-declares `animation-name`,
+   which would beat an earlier `animation: none` on source order and leave the
+   strip scrolling for users who asked it not to. */
+
+/* ---------------------------------------------------------------------------
+ * Span helpers created by About.tsx for animations
+ * -------------------------------------------------------------------------- */
+.about-word {
+  display: inline-block;
+}
+
+/* ---------------------------------------------------------------------------
+ * ABOUT — Responsive (tablet / mobile)
+ * -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .section-about {
+    height: auto;
+    /* No `min-height: 100vh` here any more. Stacked, the copy and the logo
+       strip do not fill a phone or tablet screen, and the leftover piled up
+       under the strip — 259px of it at 768, against the 81px of section padding
+       that is supposed to close the section. The section is its content plus
+       its padding now, and the strip ends where the padding starts. */
+  }
+
+  .about-grid {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  .about-intro {
+    max-width: none;
+    /* No grid-stretched height to anchor against below desktop — fall back to
+       a fixed gap ahead of the cue row instead of space-between (which would
+       collapse to zero extra space once the column height is just "auto"). */
+    justify-content: flex-start;
+    gap: 56px;
+  }
+
+  /* The ticker used to be dropped here, because a 294px-wide vertical column
+     has nowhere to go once the grid is a single column. It reflows instead:
+     the strip turns on its side and runs horizontally beneath the copy, which
+     is the shape a full-width row actually wants.
+     `--about-logo-duration` still comes from the logo count; the horizontal
+     strip then scales it down (see `.about-logo-track` below) so it reads
+     faster than the vertical one, which is dwelt on rather than glanced at.
+     Logo sizing stays intrinsic-with-caps, same as desktop. */
+  .about-logos {
+    width: 100%;
+    /* 96, down from 132. The strip is a box around marks that are at most 56px
+       tall, so its height IS the padding above and below them — at 132 that was
+       38px of air on each side of the tallest logo and far more around a thin
+       wordmark. */
+    height: 96px;
+    /* 64, down from 120. Still a clear break from the copy above — the strip is
+       its own beat — but no longer a gap wider than the section's own padding. */
+    margin-top: 64px;
+    /* Fade the left and right ends now, not the top and bottom. */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      #000 12%,
+      #000 88%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+
+  .about-logo-track {
+    flex-direction: row;
+    align-items: center;
+    /* The vertical track fills its 760px column, so it never needed centring.
+       A row track is only as tall as one item, leaving it parked against the
+       top of the taller strip — hence the explicit centre here. */
+    height: 100%;
+    /* Required, and not cosmetic: `-50%` in the keyframe resolves against the
+       track's own border box. Column-direction height is auto, so it already
+       equals the content and half of it is exactly one logo set. Row-direction
+       width is not — a block box defaults to its container's width, so the
+       track measured the strip (576px at 768, 342px at 390) while its content
+       ran 1400px. The marquee reset after half a *viewport* instead of half a
+       *set*: a visible jump, and a scroll rate that got slower the narrower
+       the screen. `max-content` makes the box the content again. */
+    width: max-content;
+    animation-name: about-logo-scroll-x;
+    /* The only knob for the horizontal strip's tempo: a fraction of the
+       count-derived duration the vertical strip uses. Lower = faster. The item
+       pitch here is a fixed 180px, so this multiplier carries the whole
+       speed-up on its own — ~115px/s. The rate is independent of the logo
+       count: both the distance travelled and the duration scale with it, so
+       this holds however many companies the CMS grows to.
+
+       0.45, up from 0.33, because SECONDS_PER_LOGO came down from 4.75 to 3.5
+       and this multiplies it. The horizontal strip was tuned to its own 115px/s
+       — a glanced-at row, not a dwelt-on column — and carrying the vertical
+       strip's speed-up through unchanged would have put it at 156px/s. The two
+       are held where each was tuned rather than locked to one ratio. */
+    animation-duration: calc(var(--about-logo-duration, 19s) * 0.45);
+  }
+
+  .about-logo-item {
+    height: auto;
+    width: 140px;
+    margin-bottom: 0;
+    margin-right: 40px;
+  }
+
+  .about-logo-item img {
+    max-width: 120px;
+    max-height: 56px;
+  }
+}
+
+/* The About block padding is on `--section-pad-block`, which is already at its
+   64px floor by the time the phone tier starts, so there is nothing to override
+   here any more. */
+
+/* Last word on the logo marquee, deliberately placed after every responsive
+   override above — those re-declare `animation-name` per breakpoint, so an
+   earlier opt-out would only hold on desktop. */
+@media (prefers-reduced-motion: reduce) {
+  .about-logo-track {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * FOCUS / "Our Philosophy" — Section (Figma 319:469).
+ * A giant heading, a short lead + "Get in touch" CTA on the left, and a
+ * static numbered list (3 principles) on the right — no pin/scrub, just an
+ * entrance reveal like About/Portfolio.
+ * -------------------------------------------------------------------------- */
+.section-focus {
+  position: relative;
+  z-index: 3;
+  background: var(--color-surface-page, #ffffff);
+  padding: var(--section-pad-block) var(--grid-margin, 200px);
+  overflow: hidden;
+
+  /* This section is drawn at the OPTICAL axis the designer pinned, not the one
+   * the browser picks.
+   *
+   * DM Sans carries two axes, `wght` and `opsz` 9-40, and `font-optical-sizing:
+   * auto` — the browser default — feeds the used font-size into `opsz`, so a
+   * 170px heading is drawn in the display cut. Every DM Sans node in Figma
+   * 549:707 instead carries an explicit `"opsz" 14`, the text cut, and the
+   * frame renders that way: "How we work" measures 1016px of ink there, which
+   * is the text cut's 1032px advance less its sidebearings, against 936.7px for
+   * the display cut. Below about 24px the two cuts are within a pixel of each
+   * other, which is why this only ever showed up in the display heading.
+   *
+   * It is scoped to this section rather than set on <html> because the file is
+   * not consistent about it. The older frames render the display cut and the
+   * page already matches them, measured off their own PNGs at 1440: the hero
+   * headline breaks after "journey" with 978px of ink on the first line (the
+   * display cut gives 980, the text cut needs 1068 and would take three lines),
+   * and About's first heading line measures 651px against the display cut's
+   * 653.9. Pinning globally would fix this section by pulling those two off
+   * their frames. Worth normalising in Figma, and then this scope can go. */
+}
+
+/* Reuses the same soft motion-blur artwork as About, fading into the white surface. */
+.focus-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* Artwork from Figma 505:2723, which is the design's own answer to this seam:
+     a photo under a linear gradient under a 100px background blur, flattened.
+     It carries its own fade — measured across the frame it swings 17.7/255 and
+     is already near-white at both ends.
+     The old `focus-bg.webp` swung 56 and started DARK at its top edge (218),
+     which is what made the boundary with the flat-white Portfolio read as a
+     step. No gradient recipe could fix that, because the hard edge was the
+     first row of the image itself; it needed different artwork.
+
+     Consequently the heavy white overlay is gone. Stacking one on art this
+     faint would only mute it. What remains are two short locks that force the
+     extreme edges to pure white — the art's own top row is 251.5, and against a
+     255 neighbour even that is a visible line — leaving the middle untouched.
+
+     `cover` scales the art to the section's height at every width, so its fade
+     always lands on the section's own edges rather than at a fixed pixel. */
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-page, #ffffff) 0%,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0) 88%,
+      var(--color-surface-page, #ffffff) 100%
+    ),
+    url('/images/focus-bg-soft.webp') top center / cover no-repeat;
+}
+
+.focus-container {
+  position: relative;
+  z-index: 1;
+  max-width: var(--fluid-container);
+  margin: 0 auto;
+}
+
+/* The two display headings are ONE style, declared together so they cannot
+   drift apart again — which is what had happened: "How we work" was 500 weight
+   at 166px, "Our Portfolio" 400 at 176px with -0.01em tracking, so the same
+   heading read differently in two sections.
+
+   Figma 460:2158 and 460:2225 are identical: DM Sans Regular, 176px at 1440,
+   line-height AUTO, no tracking, a 229px box, left edge at x=202/203. AUTO is
+   not 1 — measured off the Figma boxes it is 229/176 = 1.30 for this face, and
+   1.30 holds at every other size in these sections too.
+
+   The size used to be capped at 11.85vw because "How we work", the longer of
+   the two, measured 1069px at 176px against the 1040px measure. That was the
+   text cut of DM Sans setting 10% wide, not the design: with the opsz axis
+   shipping (see layout.tsx) the same string measures 970px at 176px, so both
+   headings hold one line on the full ramp at every width from 360 up — and at
+   1440 they now read at the design's own 176px rather than 170.6. */
+.focus-heading,
+.portfolio-display {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: var(--color-text-primary, #04212b);
+  margin: 0;
+}
+
+/* Figma 460:2156: the heading box ends at 377 and the roster heading starts at
+   466 — 89px, box to box, which is only comparable now that our line box is the
+   same height as the design's. It was 109px against a box 53px shorter. */
+.focus-heading {
+  /* 549:707 moved the heading's top edge from 152 to 156 within the section —
+   * 4px the section's own padding no longer accounts for. */
+  margin-top: clamp(4px, 0.2778vw, 5.33px);
+  margin-bottom: clamp(89px, 6.1806vw, 118.67px);
+  /* One line, at every width. Pinned at opsz 14 the string is always 6.07x the
+   * Static heading: wrapping is controlled by the shared stylesheet. */
+}
+
+.focus-grid {
+  display: grid;
+  /* Floors are the vw values at 1024px — the width where this grid collapses to
+     one column — so the two-column layout scales smoothly across its whole
+     range. They used to be the values at 1440px, which meant the left column
+     and the gutter froze the moment the viewport dropped below 1440 and every
+     pixel lost came out of the right column alone: it fell from 636px to 226px
+     and the principle descriptions stretched from 2 lines to 9. */
+  /* Figma 545:450 splits the 1036px measure as roster 429 / gap 77 / items 530
+     — the right column gained 24px and the gutter gave them up. Kept as a ratio
+     rather than fixed widths so it holds at every step of the --fluid-container
+     ramp; the gap is the only fixed term. */
+  grid-template-columns: minmax(0, 429fr) minmax(0, 530fr);
+  gap: clamp(55px, 5.3472vw, 102.67px);
+  align-items: start;
+}
+
+/* ---------------------------------------------------------------------------
+ * Left column: the team roster that replaced the standalone Team section
+ * (Figma 448:1883 — 40px gap between the heading and the list, 18px rows).
+ * -------------------------------------------------------------------------- */
+.focus-roster {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* Figma 448:1883 — 40px at 1440. Ramped with the right column's gaps rather
+     than left behind: the two columns sit side by side, and fixing the rhythm
+     on one side only would have shown at 1920. */
+  gap: clamp(28px, 2.7778vw, 53.33px);
+}
+
+.focus-roster-heading {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 28px at 1440 */
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-text-primary, #04212b);
+  margin: 0;
+}
+
+/* "Who's behind the checks" dropped from 40px to 28px in Figma 545:472, which
+   also retired the vw cap this rule used to carry: at 28px the string sets
+   300px inside a 429px column and fits with room to spare at every width, so
+   nothing has to be held back to keep it on one line. */
+
+.focus-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(13px, 1.25vw, 24px); /* Figma 460:2181 — 18px at 1440 */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.focus-roster-row {
+  /* Normal text flow, not flex: the line is "Name, Role" with the comma as a
+     bare text node between two spans, and a flex gap would have pushed it out
+     into "Name , Role". The row's own weight is the name's, so the comma
+     inherits it — matching Figma, where the comma sits in the SemiBold run. */
+  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 20px at 1440 */
+  line-height: 1.3; /* AUTO in Figma, which measures 1.30 for this face */
+  /* Set as written, NOT in caps. Figma draws the roster uppercase — 549:728
+     still does — but nine caps rows read as shouting next to the heading, and
+     the call here is the written case. Do not restore the caps from the frame
+     without asking; this is a deliberate departure, not an oversight. */
+  color: var(--color-text-primary, #04212b);
+}
+
+.focus-roster-name {
+  font-weight: 600;
+}
+
+/* The design gives the linked name no affordance at rest, so the link is
+   invisible until hovered or focused rather than underlined throughout. */
+.focus-roster-link {
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .focus-roster-link:hover {
+    opacity: 0.6;
+  }
+}
+
+.focus-roster-link:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* The role rides at the body alpha so the name leads the line. */
+/* Emoji sit beside the names at every width. They were first asked for on
+   phone and tablet only and so were `display: none` above 1024; the desktop
+   list is meant to carry them too. The slot is a fixed width so the names line
+   up in a column whatever glyph sits in it, and `em` keeps that slot on the
+   row's own type ramp. */
+.focus-roster-emoji {
+  display: inline-block;
+  width: 1.7em;
+  font-style: normal;
+  /* Emoji have their own metrics; this keeps them off the name's baseline
+     shift and stops a tall glyph from opening the line height. */
+  line-height: 1;
+  /* Raised so the glyph's optical centre meets the centre of the name's caps,
+     rather than sitting under the line the way an emoji's own box wants to.
+     Measured, not guessed: rendered at 4x and compared, the painted glyph's
+     centre used to fall 2.7px below the cap centre at this 20px size — 0.135em
+     — across the eight names with no descender to skew the reading. Backing
+     that out of the old -0.1em leaves this. In `em`, so it holds as the row's
+     type ramps with the viewport. */
+  vertical-align: 0.035em;
+}
+
+.focus-roster-role {
+  font-weight: 400;
+  color: rgba(4, 33, 43, 0.8);
+  /* The roles are the only text in the file set in the 9pt cut (Figma calls it
+   * "DM Sans 9pt Regular"), so they carry their own opsz rather than the
+   * inherited 14. Worth about a pixel a row, but it is what the design says. */
+}
+
+/* The rhythm inside the right column rode on fixed pixels while everything
+   around it scaled: between 1025 and 1920 the column itself grows 398px to
+   678px and the type with it, but these gaps, the gap inside each principle
+   and the chip's padding did not move at all — so the further past 1440 you
+   went, the more the items read as a small block adrift in a wide column.
+   Each one is now the Figma value at 1440 on the same vw ramp the column and
+   `.focus-item` already use, floored at its value at 1024 and capped at 1920,
+   which is the convention the rest of this file follows.
+
+   87px at 1440. The divider is a flex child, so this gap falls on both sides
+   of it — 87 + 2 + 87 between principles, which is what Figma 545:453 draws
+   between the bottom of one block and the top of the next. */
+.focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(62px, 6.0417vw, 116px);
+}
+
+.focus-item {
+  display: flex;
+  /* Figma 545:454 bottom-aligns the two columns: the title sits on the last
+     line of the description rather than the first. */
+  align-items: flex-end;
+  /* Figma 545:454 sets 48px at the design width; the floor is the value at
+     1024px, for the same reason as `.focus-grid`. */
+  gap: clamp(34px, 3.3333vw, 64px);
+  transition: opacity 0.3s ease;
+}
+
+/* Below the desktop breakpoint the copy goes to the far edge of the row.
+ *
+ * The head is content-sized above its floor, so a long title pushes the copy
+ * right and the column's left edge comes out ragged — at 1024 the three rows
+ * started at 265.8, 299.4 and 285.9. Sending the copy to the other edge lines
+ * all three up, since each is capped at the same measure.
+ *
+ * Scoped rather than set on the base rule: at the design width the row has no
+ * slack to distribute anyway (165 + 48 + 319 is exactly the 532 column), so
+ * desktop is where the row is packed and this is not wanted. */
+@media (max-width: 1024px) {
+  .focus-item {
+    justify-content: space-between;
+  }
+}
+
+/* Number over title, in a column of its own (Figma 545:455).
+   `min-width` rather than `width`: the design boxes the title at 165px, which
+   is 3px narrower than its own longest title sets, so a fixed width would put
+   INTELLIGENCE into the gap. Sizing to content with a floor keeps the three
+   description columns aligned and lets the one long title take what it needs. */
+.focus-item-head {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(6px, 0.5556vw, 10.67px); /* 8px at 1440 */
+  min-width: clamp(117px, 11.4583vw, 220px); /* 165px at 1440 */
+}
+
+/* Every principle now reads at full strength. 02/03 used to sit at
+   `opacity: 0.7`, which multiplied with the 80% body copy down to 0.56 —
+   3.08:1 on white, below AA. Emphasis is carried by the copy colour alone:
+   headings and numbers at full ink, paragraphs at 80%. */
+
+.focus-item-num {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 20px at 1440 */
+  font-weight: 600;
+  line-height: 1.3; /* AUTO in Figma, which measures 1.30 for this face */
+  color: var(--color-text-primary, #04212b);
+}
+
+.focus-item-title {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 24px at 1440 */
+  font-weight: 600;
+  line-height: 1.3; /* AUTO in Figma, which measures 1.30 for this face */
+  text-transform: uppercase;
+  /* One line always: the head column is sized to this, so a wrap here would
+     move the description column instead of just re-flowing the title. */
+  white-space: nowrap;
+  color: var(--color-text-primary, #04212b);
+  margin: 0;
+}
+
+.focus-item-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  font-weight: 400;
+  line-height: 1.4;
+  /* 80% body text — alpha, not `opacity`; see `.about-para`. Now that the
+     block-level dimming is gone this is the only softening applied, so all
+     three principles read identically at 5.75:1. */
+  color: rgba(4, 33, 43, 0.8);
+  /* `min(100%, …)` so the cap can never exceed the column it sits in — a bare
+     clamp with a 480px floor stayed wider than the column once it narrowed,
+     making the max-width meaningless exactly when it mattered. */
+  max-width: min(100%, clamp(341px, 33.3333vw, 640px));
+  margin: 0;
+}
+
+.focus-divider {
+  height: 2px;
+  width: 100%;
+  background: rgba(4, 33, 43, 0.1); /* Figma 448:1869 */
+}
+
+/* Span helpers created by Focus.tsx for animations */
+.focus-word {
+  display: inline-block;
+}
+.focus-title-char {
+  display: inline-block;
+}
+
+/* Holds one word's character spans together so a line can only break at the
+   spaces between words, never mid-word. See the split in Focus.tsx. */
+.focus-title-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Between 1025 and 2560 this section's type leaves the shared ramps and takes
+   one of its own, so the design's internal proportions survive the resize.
+ *
+ * Two things force it. Below 1440 the shared body ramp is deliberately gentle
+ * — readability is size-sensitive, so `--fluid-body` moves 18px to 20px across
+ * the whole 640-1440 tier — while the right column sheds width at the
+ * container's rate, a fifth of itself between 1440 and 1025. Above 1440 the
+ * problem inverts: `--fluid-h5` climbs 1.25x in step with the display ramp
+ * while `--fluid-body` climbs 1.125x, so the sizes that Figma 545:450 fixes
+ * against each other drift apart.
+ *
+ * Everything here is one ramp times a constant, and the constants are the
+ * design's own ratios at 1440: description and number 20px, title 24 (x1.2),
+ * roster row 20 (x1), roster heading 28 (x1.4).
+ *
+ * The lower ramp is pinned to the measure rather than picked: at 1024 the
+ * description runs 19px in a 341px measure, 17.9 units of measure per unit of
+ * type, and the two-column layout at 1025 leaves it ~250px, so the same ratio
+ * asks for 17px. Both blocks resolve to the Figma sizes at exactly 1440, so
+ * they meet with no step, and the upper one caps at 1920 where the container
+ * does. */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .focus-item-text,
+  .focus-item-num,
+  .focus-roster-row {
+    font-size: var(--fluid-label);
+  }
+
+  .focus-item-title {
+    font-size: var(--fluid-label);
+  }
+
+}
+
+/* Same proportional ramp as the tokens — these sizes are section-specific, not
+   the rate. See the note above `--fluid-display`. */
+@media (min-width: 1440px) {
+  .focus-item-text,
+  .focus-item-num,
+  .focus-roster-row {
+    font-size: var(--fluid-label); /* 20 -> 26.67 */
+  }
+
+  .focus-item-title {
+    font-size: var(--fluid-label); /* 24 -> 32 */
+  }
+
+}
+
+@media (max-width: 1024px) {
+  .focus-heading {
+    margin-bottom: 64px;
+  }
+
+  .focus-grid {
+    grid-template-columns: minmax(0, 1fr);
+    /* 56 + 24. Stacked, this gap is the only thing separating the roster from
+       the numbered items, and it was reading as one continuous list. */
+    gap: 80px;
+  }
+
+  .focus-item {
+    gap: 40px;
+  }
+}
+
+/* The phone keeps the two columns — number and title on the left, copy on the
+   right — rather than stacking them, which is how this read for a while. What
+   stacking was solving was the copy being squeezed into 171px on a 360 screen;
+   the body tier has since come down to 14px, so the same measure carries the
+   description without the row growing unreasonably tall.
+
+   Both gaps come in: 40 between items rather than the 62 the ramp bottoms out
+   at, and 24 across the row rather than 40, which is what buys the copy its
+   width back. */
+@media (max-width: 640px) {
+  .focus-list {
+    gap: 40px;
+  }
+
+  .focus-item {
+    gap: 24px;
+  }
+
+  /* 14px, level with the number above it and the copy beside it — the phone
+     tier sets all of its running text at 14 and the title was the one thing
+     still stepping above it, at 17. Scoped here rather than on `--fluid-h5`,
+     which `.blog-card-title` also draws from. It shortens the head column at
+     the top of the tier too — "INTELLIGENCE" is the widest of the three and at
+     640 it comes in from 138 onto the head's own 117px floor, which the copy
+     beside it gets back. Further down the tier the head was already sitting on
+     that floor, so all three rows now start their copy at the same x. */
+  .focus-item-title {
+    font-size: var(--fluid-label);
+  }
+}
+
+@media (max-width: 640px) {
+  .focus-heading {
+    margin-bottom: 40px;
+  }
+
+  .focus-item {
+    gap: 24px;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * PORTFOLIO — Company grid / list section (Figma nodes 219:34, 4946:1294).
+ *
+ * Two views share one section: GRID (4-col card grid) and LIST (full-width
+ * rows). The `VIEW: Grid | List` toggle flips `.is-view-grid` / `.is-view-list`
+ * on the section (viewMode state in Portfolio.tsx); both views live in the DOM
+ * and the inactive one is `display: none`. The `See all` expand + hover reveal
+ * behave the same across both.
+ * -------------------------------------------------------------------------- */
+.section-portfolio {
+  position: relative;
+  /* Was floored at 80 on the reasoning that this section's phone tier is
+     taller than the others'. The phone tier is now a flat 40 everywhere by
+     request, and a floor here would have been the one thing ignoring it. */
+  padding: var(--section-pad-block) var(--grid-margin, 200px);
+  background: var(--color-surface-page, #ffffff);
+
+  /* NO `overflow: hidden` here, deliberately.
+   *
+   * It used to be, inherited from the other sections, and it was the outermost
+   * box that could ever shave a card shadow. It never actually did — measured
+   * on eight widths with the "Show All" block expanded, `scrollWidth` equals
+   * `clientWidth` and `scrollHeight` equals `clientHeight` every time, so the
+   * section has no layout overflow to contain in either axis. `.portfolio-bg`,
+   * the only absolutely positioned child, is `inset: 0` — exactly the section's
+   * own box, nothing to trim. So the rule earned nothing and cost a standing
+   * risk: every future change to the card shadow had to be re-checked against
+   * it.
+   *
+   * Removing it costs nothing else either: with no overflow the section was
+   * never a scroll container in practice, and its block padding means no
+   * margin can collapse through it, so it does not need the BFC.
+   *
+   * If something in here ever does need containing, contain THAT element —
+   * don't put the clip back on the section. */
+
+  /* How far a card's shadow reaches past the card. Two shadows to clear, and
+     the hover one is the wider: resting `0 2px 21.6px 5px` reaches 17.8 down,
+     hover `0 4px 24px 5px` reaches 5 + 12 + 4 = 21. An earlier version of this
+     value was 18 — sized off the resting shadow alone, clearing it by 0.2px and
+     cutting the hover state on the last row by 3. 22 clears both.
+     It is a length in this section's geometry, so above 1440 it rides `--px`
+     with everything else — the proportion gate reads these boxes, and a flat
+     value here makes the section stop scaling as one piece. Below 1440 `--px`
+     drops under 1 and would shrink the allowance to 4.9px on a phone, which is
+     the bug this is here to fix, so `max()` holds it at 18. A few px of unused
+     headroom at 1920 is the right side to err on — it is clip room, it paints
+     nothing. */
+  --card-shadow-reach: max(22px, calc(22 * var(--px)));
+
+  /* The grid's two measurements, as tokens rather than as literals on
+     `.portfolio-card` and `.portfolio-grid`. The fold of the collapsed grid is
+     `--visible-rows` cards plus the gaps between them, so the collapse maths in
+     `.portfolio-grid-clip` has to read exactly the numbers the layout uses — a
+     literal in one place and a token in the other is how the fold drifts off a
+     row boundary and cuts a row in half. */
+  --card-h: 147px;
+  --grid-gap: 24px;
+
+  /* How many rows stand above the "Show All" fold. Per breakpoint, because the
+     column count is, and the fold has to land ON a row boundary — this is the
+     whole reason the grid is one grid now. The numbers keep the old visible
+     count of 15 cards at every tier: 3x5, 4x4 (was 3 rows plus a ragged one),
+     5x3, 15x1. */
+  --visible-rows: 3;
+}
+
+/* The cloud wash the design puts behind this section, replacing the grid
+   artwork this element used to draw — Figma 549:591 has no grid in it.
+ *
+ * Deliberately the SAME treatment as `.focus-backdrop`, asset and stops alike,
+ * rather than a separately tuned one. The frame veils its art with a gradient
+ * and a 50px backdrop blur, which no single CSS background reproduces, and
+ * matching it by hand produced a wash close to the frame's numbers but not to
+ * its neighbour's. These two sections sit against each other, so any
+ * difference between them reads as a seam — which is exactly the fault the
+ * soft artwork was cut to fix in the first place. Keep the two rules in step:
+ * change one and change the other.
+ *
+ * `cover` scales the art to the section's height at every width, so its fade
+ * lands on the section's own edges rather than at a fixed pixel, and the two
+ * short locks force the extreme edges to pure white — the art's own top row is
+ * 251.5, and against a 255 neighbour even that is a visible line. */
+.portfolio-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface-page, #ffffff) 0%,
+      rgba(255, 255, 255, 0) 12%,
+      rgba(255, 255, 255, 0) 88%,
+      var(--color-surface-page, #ffffff) 100%
+    ),
+    url('/images/focus-bg-soft.webp') top center / cover no-repeat;
+}
+
+.portfolio-container {
+  position: relative;
+  z-index: 1;
+  max-width: var(--fluid-container);
+  margin: 0 auto;
+}
+
+.portfolio-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  gap: 16px;
+  margin-bottom: 61px;
+}
+
+/* `.portfolio-display` is declared with `.focus-heading` above: same display
+   step, one rule, so they cannot diverge.
+
+   The optical axis is pinned separately, here, rather than in that shared
+   rule: this section's own two headings (549:591, "Our Portfolio" and its
+   subheading) are the evidence, and pinning inside the shared block would
+   also reach `.focus-heading`, which is out of scope for this change. The
+   proof is the frame's rendered ink, not its exported metadata — the export
+   claims `"opsz" 14` on plenty of nodes that demonstrably draw the other cut.
+   Measured directly off the frame, "Our Portfolio" sets 978.6px of ink at
+   170px; the text cut (opsz 14) is the only one that produces that number,
+   the browser's auto/display cut would draw it at ~892px. */
+.portfolio-display {
+}
+
+.portfolio-subheading {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 28px at 1440 */
+  font-weight: 500;
+  line-height: 1.3;
+  max-width: clamp(560px, 51.5278vw, 990px); /* 742px at 1440 */
+  color: var(--color-text-primary, #04212b);
+  margin: 0;
+  /* The `opsz 14` pin that used to sit here moved to the shared sub-heading
+     rule at the end of this file, which draws all three sub-headings in one
+     cut. `.portfolio-display` above keeps its own pin — that one is the
+     measured one. */
+}
+
+.portfolio-word {
+  display: inline-block;
+}
+
+/* ---- VIEW: Grid | List toggle (Figma 4946:1302) ---------------------------
+ * Left-aligned segmented control. Active label sits in a white box; the labels
+ * scramble on hover (scrambleLabel), mirroring the header nav interaction. */
+.portfolio-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  /* Figma 549:591's own auto-layout gap between the toolbar and the list. */
+  margin-bottom: 32px;
+}
+
+.portfolio-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill, 4px);
+  background: var(--color-pill-tag-bg, rgba(0, 0, 0, 0.1));
+}
+
+.portfolio-view-prefix {
+  /* inline by default, so the nudge below would not apply */
+  display: inline-block;
+  transform: translateY(var(--mono-cap-nudge));
+}
+
+.portfolio-view-prefix,
+.portfolio-view-btn {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: var(--label-tracking, 0.42px);
+  line-height: 1.2;
+  color: var(--color-text-primary, #04212b);
+}
+
+.portfolio-view-btn {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.portfolio-view-btn.is-active {
+  /* A dark fill in the brand ink, the same one `.portfolio-button` uses. The
+     frame inverts this pill (cream fill, dark ink) and it was built that way
+     for a while; the dark fill was asked for instead, so the frame is
+     deliberately not followed here. */
+  background: var(--color-pill-btn-bg, #04212b);
+  color: var(--color-pill-btn-text, #ffffff);
+}
+
+.portfolio-view-btn:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 2px;
+}
+
+.portfolio-view-label {
+  display: inline-block;
+  transform: translateY(var(--mono-cap-nudge));
+}
+
+/* Which view is visible (the other stays in the DOM but hidden). */
+.section-portfolio.is-view-grid .portfolio-view-list {
+  display: none;
+}
+
+.section-portfolio.is-view-list .portfolio-view-grid {
+  display: none;
+}
+
+.portfolio-grid {
+  display: grid;
+  /* `minmax(0, ...)`, not a bare `1fr`. A bare `1fr` floors the track at the
+     content's min-content width, and `.portfolio-card-inner` is 172px wide
+     inside 8px of card padding — so every track had a hard 188px floor and the
+     grid simply overran its container instead of shrinking. At 390 that put
+     two 188px columns and a 16px gap, 392px, into a 342px measure, and the
+     section's `overflow: hidden` cut the right-hand column off mid-word. The
+     card's inner box already carries `max-width: 100%`, so it follows the
+     track down once the track is allowed to move. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+/* The collapse box for the GRID view.
+ *
+ * There used to be two grids here — the first fifteen cards in one, the rest in
+ * a second inside the collapsing wrapper. Two grids means two independent
+ * column flows, and the second always starts a fresh row: whenever fifteen did
+ * not divide by the column count the first grid ended on a ragged row and the
+ * hole sat in the middle of the section. At five and three columns fifteen
+ * divides and nothing showed; at four columns (769-1024) it left 4+4+4+3 and a
+ * gap you could see. The count was never the bug — the split was.
+ *
+ * So: one grid with every card in it, and the collapse moved out to this box,
+ * which simply clips it to `--visible-rows` rows. A single flow cannot be
+ * ragged, and "three rows" is now true at any column count instead of being a
+ * coincidence of arithmetic at 1440.
+ *
+ * `max-height` rather than `height` so a collection shorter than the fold just
+ * ends where it ends instead of leaving dead space under the last row. */
+.portfolio-grid-clip {
+  /* The fold: N cards tall plus the N-1 gaps between them. */
+  --fold: calc(
+    var(--visible-rows) * var(--card-h) + (var(--visible-rows) - 1) * var(--grid-gap)
+  );
+
+  /* Bottom shadow room for the LAST VISIBLE row, capped at the gap. The box
+     below the fold is the gutter to the next row, and it is the only place this
+     allowance can come from — spend more than the gutter and the row that is
+     supposed to be hidden starts showing its top edge. 24px of gutter clears
+     the 21px hover reach outright; 16px on a phone leaves the last few px of a
+     3%-opacity tail, which is the right thing to give up here. */
+  --fold-reach: min(var(--card-shadow-reach), var(--grid-gap));
+
+  overflow: hidden;
+
+  /* Shadow room on the other three sides, pulled straight back out, so the box
+     is bigger than the grid but sits exactly where the grid sits. The bottom is
+     paid for separately below, because its allowance differs between the two
+     states. */
+  padding: var(--card-shadow-reach);
+  margin: calc(-1 * var(--card-shadow-reach)) calc(-1 * var(--card-shadow-reach)) 0;
+
+  /* Border-box, so this is padding-top + the rows + the fold allowance. */
+  max-height: calc(var(--card-shadow-reach) + var(--fold) + var(--fold-reach));
+
+  /* Only the collapsed allowance comes back out here, so the distance from the
+     last visible row to the "Show All" button is the designed 40px at every
+     tier rather than drifting with the gap. */
+  margin-bottom: calc(-1 * var(--fold-reach));
+
+  transition: max-height 0.45s ease;
+}
+
+/* Open: no clamp. The box keeps its `overflow: hidden`, and that is fine — with
+ * `--card-shadow-reach` of padding on every side it is strictly larger than the
+ * grid, so there is nothing of the cards left against its edges. No
+ * `allow-discrete` dance needed for this one. */
+.portfolio-grid-clip.is-open {
+  max-height: none;
+  padding-bottom: var(--card-shadow-reach);
+  margin-bottom: calc(-1 * var(--card-shadow-reach));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-grid-clip {
+    transition: none;
+  }
+}
+
+/* Extra rows revealed by the "Show All" toggle in the LIST view.
+ *
+ * The grid view used to share this and no longer does — it is one grid now,
+ * clipped by `.portfolio-grid-clip` above. What was here for the grid's sake
+ * has gone with it: the `--card-shadow-reach` padding on the inner box, the
+ * negative margin that paid it back, the `padding-top` / `padding-bottom` pair
+ * on `.portfolio-grid-extra`, and the `allow-discrete` switch to
+ * `overflow: visible`. All four existed to keep a card's box-shadow off a clip
+ * edge, and `.portfolio-list-row` has no shadow to keep off anything — it is a
+ * flex row of text. A single column also cannot end on a ragged row, which is
+ * why the list view never showed the hole the grid did. */
+.portfolio-extra-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s ease;
+}
+
+.portfolio-extra-wrap.is-open {
+  grid-template-rows: 1fr;
+}
+
+.portfolio-extra-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-extra-wrap {
+    transition: none;
+  }
+}
+
+/* Figma 460:1992. A 188x147 tile holding a centred icon over one centred line
+   of "Name — description". It replaces a 294x210 photo tile whose wordmark slid
+   away on hover to reveal a panel of copy; the redesign shows the copy outright
+   and has no hover state at all.
+   The card is white with a soft shadow — the mint gradient an earlier revision
+   used is gone. On a white section that makes the shadow the only thing
+   separating card from page, so it is quoted exactly rather than rounded. */
+.portfolio-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--card-h);
+  padding: 0 8px;
+  border-radius: 6px;
+  background: var(--color-surface-page, #ffffff);
+  box-shadow: 0 2px 21.6px 5px rgba(0, 0, 0, 0.03);
+  text-decoration: none;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.portfolio-card:hover {
+    /* Lift the shadow rather than fading the card: at 3% opacity a fade would
+       read as the card blinking out, not as a response. */
+    box-shadow: 0 4px 24px 5px rgba(0, 0, 0, 0.07);
+  }
+}
+
+a.portfolio-card:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 3px;
+}
+
+.portfolio-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 172px;
+  max-width: 100%;
+  /* Figma centres this then nudges it 7.5px up (top: calc(50% - 7.5px)), which
+     leaves more air under the caption than over the icon. */
+  margin-bottom: 15px;
+}
+
+.portfolio-card-icon {
+  display: block;
+  /* Figma draws the grid mark in a 33.4px box, but from a source carrying its
+     own padding — ink landed anywhere from 16 to 33px. The icon files now bake
+     in the padding the LIST needs (ink at 19.4 of a 32px slot), so the same
+     33.4px box here would show every mark at ~20px and read weak in a 147px
+     card. 44px puts the mean ink back on the ~27.7px the design's grid shows.
+     One box cannot reproduce that spread exactly — the two views normalise
+     differently — and the list is the default view and the one Figma gives
+     exact per-mark numbers for, so it is the one the files are tuned to. */
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.portfolio-card-label {
+  margin: 0;
+  font-family: var(--font-sans);
+  /* 11.18px at 1440, per the design; keeps a rem term so it still answers the
+     reader's browser font-size rather than being pure vw. Below 1440 only —
+     above it the label rides the proportional ramp with everything else. */
+  font-size: var(--fluid-label);
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(4, 33, 43, 0.7);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-card {
+    transition: none;
+  }
+}
+
+/* ---- LIST view rows (Figma 322:567) ----------------------------------------
+ * Rows: 50px logo tile · name — description. Left-aligned at the grid's own
+ * 1248px container width (not a separate narrower centered column) — the old
+ * per-view container width made the whole section jump sideways whenever
+ * Grid/List was toggled. -------------------------------------------------- */
+.portfolio-list {
+  display: flex;
+  flex-direction: column;
+  /* 16px against the 32px icon slot gives Figma's 48px row pitch. */
+  gap: 16px;
+}
+
+.portfolio-list-extra {
+  padding-top: 16px;
+}
+
+.portfolio-list-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.portfolio-list-row:hover {
+    opacity: 0.65;
+  }
+}
+
+a.portfolio-list-row:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* The 32px/4px-radius slot behind each list icon carries NO fill.
+   Figma 549:591 draws a mint gradient there — sampled off the frame's own
+   render the chip runs rgb(230,243,242) to rgb(193,231,229) — and this was
+   briefly white; both were asked away in turn, so the icons sit on the
+   section's own wash. The slot itself stays: it keeps every icon boxed to the
+   same 32px whatever shape the asset inside it is, which is also why it is a
+   span in PortfolioContent.tsx rather than the <img>. */
+.portfolio-list-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+
+.portfolio-list-mark {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Figma 460:2221 sets the whole row as ONE 16px/30 line: the name in Medium,
+   then " — desc" in Light, both at full ink. Inline flow rather than a flex
+   row, so a long description wraps under itself instead of being clipped. */
+.portfolio-list-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-sans); /* Inter, per the frame — not the DM Sans heading face */
+  font-size: var(--fluid-label); /* 16px */
+  line-height: 1.875; /* 30px */
+  color: var(--color-text-primary, #04212b);
+}
+
+.portfolio-list-title {
+  font-weight: 500;
+}
+
+.portfolio-list-dash,
+.portfolio-list-desc {
+  font-weight: 300;
+}
+
+/* Same optical correction as the view toggle — see --mono-cap-nudge. These are
+   the other uppercase-mono labels that sit inside a filled box. */
+.portfolio-btn-label {
+  display: inline-block;
+  transform: translateY(var(--mono-cap-nudge));
+}
+
+.portfolio-button-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 26px; /* Figma 460:2312 */
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.portfolio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12.5px 24px;
+  border: none;
+  border-radius: var(--radius-pill, 4px);
+  background: var(--color-pill-btn-bg, #04212b);
+  color: var(--color-pill-btn-text, #fff);
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: var(--label-tracking, 0.42px);
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  width: fit-content;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.portfolio-button:hover {
+  background: var(--color-ink-hover, #084054);
+  transform: translateY(-1px);
+}
+
+.portfolio-button:focus-visible {
+  outline: 2px solid var(--color-text-primary, #04212b);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .section-portfolio {
+    --grid-gap: 20px;
+    /* Four columns, so four rows to keep the old fifteen-card preview. This is
+       the tier the split used to break in. */
+    --visible-rows: 4;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-header {
+    margin-bottom: 40px;
+  }
+
+  .portfolio-toolbar {
+    margin-bottom: 32px;
+  }
+
+  .section-portfolio {
+    --grid-gap: 16px;
+    --visible-rows: 5;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portfolio-list,
+  .portfolio-list-extra {
+    gap: 24px;
+    padding-top: 0;
+  }
+
+  .portfolio-list-extra {
+    padding-top: 24px;
+  }
+
+  .portfolio-list-row {
+    gap: 20px;
+  }
+
+
+  .portfolio-button-wrap {
+    margin-top: 48px;
+  }
+}
+
+/* One column on a phone. Two left the last row half empty whenever the count
+   was odd — which it is — and that empty cell read as a missing card rather
+   than as the end of a grid.
+   It has to sit AFTER the 768 block above: both rules are one class, so source
+   order decides, and either placing it earlier or folding it into that block
+   takes the tablet's three columns down with it. */
+@media (max-width: 640px) {
+  .section-portfolio {
+    --grid-gap: 16px;
+    /* One column, so fifteen rows — the same fifteen cards the other tiers
+       show, not a shorter preview by accident of the column count. */
+    --visible-rows: 15;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A phone gets the LIST view and no choice about it.
+ *
+ * The grid is a single column at this tier — the rule directly above — so the
+ * toggle offered a choice between one column of cards and one column of rows:
+ * the same thirty companies in the same order, one of them costing several
+ * screens more scroll to say it. Above 640 both views are still there and
+ * nothing here applies.
+ *
+ * The toggle is hidden rather than dropped from the render. Which tier we are
+ * on is a media query, and the server cannot read one, so removing the control
+ * in React would mean rendering it and then pulling it out after hydration —
+ * a flash of a control that is not on offer, on every phone load.
+ *
+ * These rules hold the view on their own, with JS or without it.
+ * `PortfolioContent` mirrors the query only to keep `viewMode` honest, so
+ * `aria-pressed` never describes a control nobody can reach.
+ *
+ * Placement: the `is-view-*` pair this overrides is a pair of single-class
+ * selectors near the top of the section, matched exactly here, so source order
+ * is the whole mechanism — this block has to stay below them. */
+@media (max-width: 640px) {
+  .portfolio-toolbar {
+    display: none;
+  }
+
+  /* The toolbar carried 32px under it (the 768 tier's value). The header takes
+     them over, so the gap between "Our Portfolio" and the first row is the one
+     that was there before the toolbar went away. */
+  .portfolio-header {
+    margin-bottom: 72px;
+  }
+
+  /* Whatever `viewMode` says — a view chosen on a wider screen survives a
+     resize down for the frame before the effect in `PortfolioContent` runs,
+     and forever if JS never arrives. */
+  .section-portfolio.is-view-grid .portfolio-view-grid {
+    display: none;
+  }
+
+  .section-portfolio.is-view-grid .portfolio-view-list {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .portfolio-list-row {
+    gap: 16px;
+  }
+
+  /* The row stays ONE run of text at every width: the name in its heavier
+     weight, the em dash, then the description, wrapping wherever the measure
+     runs out. This used to break the description onto its own line here and
+     drop the dash with it, on the reasoning that a narrow screen could not
+     carry "name — desc" on one line — but wrapping mid-sentence is what
+     running text does, and the split read as two separate elements rather than
+     one entry. */
+}
+
+/* ---------------------------------------------------------------------------
+ * Footer — rebuilt 1:1 from Figma node 177:138. Left menu (tag + nav + social)
+ * and a right "card" (a clipped mesh window) above a bottom legal bar. Plain CSS
+ * keyed off semantic tokens + literal fallbacks, mirroring the other sections.
+ * Muted tones are tuned to pass WCAG AA contrast on the white surface.
+ * -------------------------------------------------------------------------- */
+.section-footer {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface-page, #ffffff);
+  /* Figma 460:2201 is 165px tall end to end — the disclaimer sits ~108px down
+     with ~35px under it. The 152px top padding belonged to the nav row that no
+     longer exists.
+     The gutter is 96px here, NOT the 200px the rest of the page uses: the
+     design runs this bar from x=96 to x=1342, and it is the only thing left in
+     the footer, so there is no column above it to line up with. At 200px the
+     five items on the right squeezed the disclaimer into three lines and the
+     section overshot 165px by 12. Ramped like --grid-margin so it tracks the
+     viewport rather than freezing. */
+  /* Ramped on both axes for the same reason as --section-pad-block: 6.9444vw
+     is 100/1440, so the design width still reads 100px. */
+  padding: clamp(64px, 6.9444vw, 133.33px) clamp(24px, 6.6667vw, 128px) 32px;
+}
+
+/* The sub-desktop gutter, matching the header — see the note on `.navbar`.
+   This has to come after the rule above: both are a single class, so the
+   `padding` shorthand there would otherwise win on source order and put the
+   ramp back. */
+@media (max-width: 1024px) {
+  .section-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* The bar's top padding is the last gap between sections, so it takes the
+   phone tier's 40 like the rest. Its 32px bottom is its own and stays. */
+@media (max-width: 640px) {
+  .section-footer {
+    padding-top: 40px;
+  }
+}
+
+.footer-inner {
+  position: relative;
+  z-index: 1;
+  /* Not --fluid-container: that is the 1040px measure the 200px gutters leave,
+     and this bar is deliberately wider (Figma runs it 96 -> 1342). Its own
+     padding sets the width. */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Bottom: legal bar ---- */
+.footer-legal {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+}
+
+.footer-legal-disclaimer {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 10px, per Figma 460:2201 */
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.55);
+  max-width: 588px;
+  margin: 0;
+}
+
+.footer-legal-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2.2222vw, 43px);
+  flex-shrink: 0;
+}
+
+.footer-legal-copy,
+.footer-legal-link {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 10px */
+  line-height: 1.3;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.footer-legal-links {
+  display: flex;
+  gap: clamp(16px, 1.9444vw, 37px);
+}
+
+.footer-legal-link {
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.footer-legal-link:hover,
+.footer-legal-link:focus-visible {
+  color: var(--color-text-primary, #04212b);
+}
+
+@media (max-width: 1024px) {
+
+  /* The legal bar stacks from here rather than from 640px. Its row put a 680px
+     disclaimer next to the copyright and both policy links, which only fits on
+     a desktop measure — on a tablet the disclaimer collapsed into a narrow
+     column of six short lines while the rest sat beside it. */
+  .footer-legal {
+    flex-direction: column;
+    gap: 16px;
+  }
+  /* Copyright and both policy links stay on one line — they fit across a
+     tablet with room over. `flex-wrap` is the safety net, not the intent: it
+     only engages on the narrowest phones, where the three together are wider
+     than the screen. */
+  .footer-legal-right {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 32px;
+  }
+  .footer-legal-links {
+    flex-wrap: wrap;
+    gap: 12px 32px;
+  }
+}
+
+/* The legal bar's stacking lives in the 1024px block above, and the padding is
+   ramped on the base rule, so the phone tier needs nothing of its own. */
+
+/* =============================================================================
+ * ARTICLE PAGE  (route: /articles/who-controls-the-agent)
+ *
+ * Figma node 186:286. Plain CSS keyed off the class names rendered by
+ * ArticleHero / ArticleBody / ArticleToc — same convention as every other
+ * section. Composes the `.pill-tag` primitive. Muted text alphas are raised
+ * above the Figma values so small text clears WCAG AA contrast on white
+ * (#ffffff) — the a11y gate asserts zero color-contrast violations.
+ * ========================================================================== */
+
+/* ---- Hero (186:287) ---- */
+.article-hero {
+  position: relative;
+  background: var(--color-surface-page, #ffffff);
+  padding: 128px var(--grid-margin, 200px) 96px;
+  overflow: hidden;
+}
+/* Brand cloud photo across the top, fading into white where the card sits. */
+.article-hero-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 820px;
+  background: url('/images/hero-bg.webp') center top / cover no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+.article-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0) 45%);
+}
+.article-hero-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1007px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.article-breadcrumb {
+  display: flex;
+  justify-content: center;
+}
+/* Whole breadcrumb sits in one pill: link + separator + current crumb. The pill
+ * starts collapsed to a centre sliver and is expanded from the centre by
+ * ArticleHero's effect (reduced-motion / no-JS reset to full). */
+.article-breadcrumb-pill {
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  clip-path: inset(0% 50% 0% 50%);
+}
+/* The "All Articles" link inside the pill — inherits the pill's mono styling. */
+.article-hero-tag {
+  color: inherit;
+  text-decoration: none;
+}
+.article-hero-tag .tag-char {
+  display: inline-block;
+}
+.article-breadcrumb-sep {
+  opacity: 0.45;
+}
+/* Final (current) crumb — a working link to this article, SAME colour as the
+ * first crumb (no dimming). */
+.article-breadcrumb-current {
+  color: inherit;
+  text-decoration: none;
+}
+.article-title {
+  margin-top: 32px;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 64px */
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  color: #04212b;
+}
+.article-title .word {
+  display: inline-block;
+}
+.article-subtitle {
+  margin-top: 16px;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 20px */
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(4, 33, 43, 0.8);
+  /* Revealed by ArticleHero's effect (reduced-motion / no-JS reset to 1). */
+  opacity: 0;
+}
+/* Byline row: author to the left of the date, same font + same colour. */
+.article-byline {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  color: rgba(4, 33, 43, 0.78);
+  /* Revealed by ArticleHero's effect (reduced-motion / no-JS reset to 1). */
+  opacity: 0;
+}
+.article-author,
+.article-date {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  color: rgba(4, 33, 43, 0.78);
+}
+.article-byline-sep {
+  opacity: 0.6;
+}
+/* Decorative product-screenshot card (186:289). */
+/* One image, filling the card. It used to be a fixed backdrop with the article's
+   own picture laid on top at 60% width, which read as two stacked images —
+   especially once the picture itself carried a background. The cover now comes
+   from the article's `heroImage`, the same field the listing card uses, so a
+   piece has one cover everywhere instead of one per surface. */
+.article-hero-card {
+  position: relative;
+  z-index: 2;
+  width: 824px;
+  max-width: 100%;
+  height: 440px;
+  margin: 64px auto 0;
+  border-radius: 12px;
+  overflow: hidden;
+  /* Shows through while the image loads and behind any transparency in it. */
+  background: rgba(4, 33, 43, 0.06);
+}
+.article-hero-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---- Two-column body (186:309) ---- */
+/* Full-bleed white backdrop — the page <body> is teal, so this stops the teal
+ * showing in the gutters beside the centred (max-width) layout on wide viewports. */
+.article-body {
+  background: var(--color-surface-page, #ffffff);
+}
+.article-layout {
+  background: var(--color-surface-page, #ffffff);
+  max-width: 1334px;
+  margin-inline: auto;
+  padding: 80px var(--grid-margin, 200px) 120px;
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  column-gap: 106px;
+  align-items: start;
+}
+
+/* Sticky table of contents (186:314). */
+.article-toc {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+.article-toc-pill {
+  /* `.pill-tag` already styles it; nothing extra needed. */
+}
+.article-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.article-toc-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 16px */
+  line-height: 1.3;
+  letter-spacing: 0.48px;
+  text-transform: uppercase;
+  text-decoration: none;
+  /* Ghost colour for inactive items — a warm off-white tone (not green),
+   * so they read as faded against the white page. Active + hover go full dark. */
+  color: #c8bfae;
+  transition: color 0.2s;
+}
+.article-toc-item:hover {
+  color: #04212b;
+}
+.article-toc-item:focus-visible {
+  outline: 2px solid #04212b;
+  outline-offset: 3px;
+}
+.article-toc-bullet {
+  display: none;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 1px;
+  background: #04212b;
+}
+.article-toc-item.is-active {
+  color: #04212b;
+}
+.article-toc-item.is-active .article-toc-bullet {
+  display: block;
+}
+
+/* Right content column (186:329). */
+.article-content {
+  min-width: 0;
+}
+.article-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.article-section {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  scroll-margin-top: 96px;
+}
+.article-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 32px */
+  font-weight: 500;
+  line-height: 1.2;
+  color: #04212b;
+}
+.article-p {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 18px */
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(4, 33, 43, 0.8);
+}
+/* Bold lead-ins. Inter ships as a variable font, so 700 is a real weight drawn
+ * by the typeface rather than the browser's synthetic smear. */
+.article-content b {
+  font-weight: 700;
+}
+.article-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.article-figure-frame {
+  width: 100%;
+  aspect-ratio: 636 / 385;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.article-figure-frame img {
+  width: 90%;
+  height: auto;
+  max-height: 90%;
+  object-fit: contain;
+  display: block;
+}
+.article-caption {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  font-style: italic;
+  color: rgba(4, 33, 43, 0.8);
+}
+.article-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.article-item-label {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 16px */
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(4, 33, 43, 0.92);
+}
+
+/* Scramble spans (shared by the hero pill, TOC pill and active TOC label).
+ * Words are kept intact and wrap between words; chars are inline-block so they
+ * can animate without the label breaking mid-word. */
+.scramble-inner {
+  display: inline;
+}
+.scramble-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.scramble-char {
+  display: inline-block;
+}
+
+/* Prev / next pager (186:462). */
+.article-pager {
+  grid-column: 1 / -1;
+  margin-top: 80px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.article-pager-link {
+  gap: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.article-pager-link:hover {
+  background: var(--color-pill-tag-bg-hover, rgba(0, 0, 0, 0.16));
+}
+.article-pager-link:focus-visible {
+  outline: 2px solid #04212b;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .article-layout {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
+    padding-inline: 48px;
+  }
+  .article-toc {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .article-hero {
+    padding: 104px 24px 64px;
+  }
+  .article-hero-card {
+    height: 280px;
+    margin-top: 48px;
+  }
+  .article-hero-card img {
+    max-width: 70%;
+  }
+  .article-layout {
+    padding: 48px 24px 80px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Square-grid backdrop. Introduced for the Team section, which Figma
+ * "Option 2" removed; the Footer still paints it, so the rule stays and keeps
+ * its original class name rather than churning the markup.
+ * -------------------------------------------------------------------------- */
+.team-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/images/team-grid.svg');
+  background-repeat: no-repeat;
+  background-position: 58% top;
+  background-size: 1400px auto;
+  opacity: 0.5;
+}
+
+/* =============================================================================
+ * BLOG INDEX (/articles) — Figma 371:989.
+ *
+ * A centred masthead, an "Explore by Category" filter row, then a three-column
+ * card grid. Card tag and filter pills both build on the shared `.pill-tag`
+ * primitive rather than redeclaring the shape.
+ *
+ * One deliberate departure from the file: Figma gives the card's tag
+ * `rgba(255,255,255,0.1)`, which is invisible on the white surface — the mock
+ * renders it the same grey as the filter pills. `.pill-tag`'s own
+ * `rgba(0,0,0,0.1)` is what the design actually shows, so it is left alone.
+ * ========================================================================== */
+.section-blog {
+  position: relative;
+  background: var(--color-surface-page, #ffffff);
+  padding: 200px var(--grid-margin, 200px) 152px;
+}
+
+.blog-container {
+  max-width: var(--fluid-container);
+  margin: 0 auto;
+}
+
+/* ---- Masthead ---- */
+.blog-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  margin-bottom: 132px;
+}
+
+.blog-title {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 64px */
+  font-weight: 500;
+  line-height: 1.1;
+  color: #04212b;
+  margin: 0;
+}
+
+/* The subtitle and the two empty states are the same voice — muted body copy
+   under a heading — so they share a rule rather than the empty states falling
+   through to browser defaults, which is what happened when the old
+   `.articles-empty` went out with the list layout. */
+.blog-subtitle,
+.articles-empty {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 20px */
+  line-height: 1.4;
+  color: rgba(4, 33, 43, 0.7);
+  margin: 0;
+}
+
+/* ---- Filter row ---- */
+.blog-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.blog-filters-heading {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 32px */
+  font-weight: 500;
+  line-height: 1.2;
+  color: #04212b;
+  margin: 0;
+}
+
+.blog-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* The filter row is a control and the card tag is a label, so the design sizes
+   them apart — one above `.pill-tag`'s shared default, one below.
+
+   Set through `--label-size` / `--label-tracking` rather than by redeclaring
+   `font-size`: those are the custom properties `.pill-tag` reads, so this uses
+   its extension point instead of routing around it. The tokens are real —
+   `tokens.generated.css` defines them from Figma — but as a static 14px, which
+   is why tags held still while the copy beside them scaled. Overriding them in
+   `@theme` would move seven other places across the site, so the change stays
+   scoped to this page. */
+.blog-filter {
+  gap: 8px;
+  --label-size: var(--fluid-control); /* 16px */
+  /* em so the box follows the label instead of staying one size. At this pill's
+     16px these resolve to exactly the 8px / 16px the design specifies, which is
+     why 16px makes the ratio come out round. The primitive keeps px: Figma holds
+     pill padding constant across label sizes, so no single em ratio serves all
+     of them. */
+  padding: 0.5em 1em;
+  --label-tracking: 0.03em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* One rule, because they are the same mark: the count beside a filter label and
+   the category tag on a card. */
+.blog-filter-count,
+.blog-card-tag {
+  --label-size: var(--fluid-label-sm); /* 12px */
+  --label-tracking: 0.03em;
+  font-size: var(--fluid-label);
+  letter-spacing: var(--label-tracking);
+}
+
+.blog-filter-count {
+  /* Sits high against the label, as a count rather than a second word. */
+  align-self: flex-start;
+}
+
+.blog-filter.is-active {
+  background: var(--color-pill-btn-bg, #04212b);
+  color: var(--color-pill-btn-text, #ffffff);
+}
+
+/* Resolves to the same hover ink every button on the site uses
+   (`.portfolio-button:hover`, `.footer-submit:hover`). Applied to the active pill too,
+   so hovering always answers the same way rather than going quiet on whichever
+   one is selected. The lift those buttons carry is left off on purpose: a row
+   of pills bobbing as the pointer crosses it reads as jitter, not feedback. */
+@media (hover: hover) and (pointer: fine) {
+  .blog-filter:hover {
+    background: var(--color-ink-hover, #084054);
+    color: var(--color-pill-btn-text, #ffffff);
+  }
+}
+
+/* Filtering happens here, not in JavaScript: the pill row sets `data-filter` on
+   the wrapper and cards of other categories are hidden. Nothing unmounts, so
+   images are not thrown away and re-fetched on every click, and the card markup
+   never has to cross into the client bundle.
+
+   One rule per category, because CSS cannot compare two attributes to each
+   other. Written as "hide what does not match" rather than "hide all, re-show
+   matches" so the failure mode is safe: a category added to the collection
+   without a rule here shows everything instead of emptying the grid. The set is
+   a Postgres enum, so adding one already requires a migration. */
+.blog-grid-section[data-filter='founders'] .blog-card:not([data-category='founders']),
+.blog-grid-section[data-filter='working-at-mento']
+  .blog-card:not([data-category='working-at-mento']),
+.blog-grid-section[data-filter='best-practices']
+  .blog-card:not([data-category='best-practices']) {
+  display: none;
+}
+
+/* ---- Card grid ---- */
+.blog-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 40px;
+}
+
+.blog-card-link {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.blog-card-media {
+  display: block;
+  width: 100%;
+  /* 400x207 in the design; an aspect ratio holds that shape as the column
+     narrows, and reserves the box before the image loads so the grid does not
+     shift under it. */
+  aspect-ratio: 400 / 207;
+  overflow: hidden;
+  border-radius: var(--radius-card, 12px);
+  background: rgba(4, 33, 43, 0.06);
+}
+
+.blog-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.blog-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  /* Pushes the meta row to the card's bottom edge so a short title does not
+     leave the author line floating mid-card, out of line with its neighbours. */
+  flex: 1;
+}
+
+.blog-card-title {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 24px */
+  font-weight: 500;
+  line-height: 1.2;
+  color: #04212b;
+  transition: color 0.2s ease;
+}
+
+.blog-card-excerpt {
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 18px */
+  /* 21/18 — the design's excerpt box is 42px over two lines. */
+  line-height: 1.167;
+  color: rgba(4, 33, 43, 0.7);
+  /* Always exactly two lines: clamped so a long standfirst cannot push the
+     meta row down, and reserved so a short one cannot pull it up. Without the
+     reservation the cards in a row disagree about where the copy block ends.
+     Expressed in em so it tracks the clamped font size. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(2 * 1.167em);
+}
+
+.blog-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-sans);
+  font-size: var(--fluid-label); /* 14px */
+  font-weight: 500;
+  /* 0.6 alpha in Figma reads under 4.5:1 at 14px on white; 0.72 is the same
+     tone and clears AA, which the page's a11y gate enforces. */
+  color: rgba(4, 33, 43, 0.72);
+}
+
+/* The title is the only hover feedback — the cover stays still on purpose. */
+@media (hover: hover) and (pointer: fine) {
+  .blog-card-link:hover .blog-card-title {
+    color: var(--color-ink-hover, #084054);
+  }
+}
+
+/* Second ramp, covering 1024 -> 1440. The base rules above run 1440 -> 1920 and
+   sit on their minimum below that, so without this the whole tablet-to-desktop
+   band was a plateau. Two ramps rather than one stretched across everything:
+   they meet exactly at 1440, so the sizes still land on the Figma values at the
+   design width instead of drifting a percent or two off them. */
+
+/* Layout still switches at the usual breakpoint. Type does not need a step here
+   any more — the ramp above already sits on its 1024px minimum by this width. */
+@media (max-width: 1024px) {
+  .section-blog {
+    padding: 160px 48px 96px;
+  }
+  .blog-intro {
+    margin-bottom: 88px;
+  }
+  .blog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Third ramp, covering 640 -> 1024, so the whole range from phone to 1920 is
+   continuous. Without it the type sat flat across the tablet band and then
+   dropped a full step at 640 — the sharpest break left once the bands above
+   were smoothed. The excerpt is 17px at both ends of this band, so it needs no
+   ramp. Endpoints match the mobile tier used elsewhere in the file: 24px
+   section headings, 17px for secondary copy like the article paragraph. */
+
+@media (max-width: 640px) {
+  .section-blog {
+    padding: 140px 24px 96px;
+  }
+  .blog-intro {
+    margin-bottom: 64px;
+  }
+  .blog-filters {
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .blog-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 48px;
+  }
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Above 1440: the spacing the design states as a flat number.
+ *
+ * The page's grid, padding and type are all proportional above the design
+ * width (see `--px` and the token block at the top). These few values were not:
+ * they are the gaps and control paddings the design gives as plain pixels, and
+ * a flat gap inside a growing block is what makes a section drift out of
+ * composition on a wide screen. An audit comparing every element in the hero,
+ * About, Focus, Portfolio and the footer at 1440 against 1920 traced the
+ * remaining deviations to exactly the rules below.
+ *
+ * They live together, at the end, because they belong to five different
+ * sections and one concern. Source order matters and this is the safe end of
+ * it: each selector here matches the specificity of its base rule, so the block
+ * has to come after all of them. The narrower media queries above are
+ * unaffected — this one simply does not match below 1440.
+ * -------------------------------------------------------------------------- */
+@media (min-width: 1440px) {
+  .hero .content {
+    gap: calc(24 * var(--px));
+  }
+
+  .portfolio-header {
+    gap: calc(16 * var(--px));
+    margin-bottom: calc(61 * var(--px));
+  }
+
+  .portfolio-toolbar {
+    margin-bottom: calc(32 * var(--px));
+  }
+
+  .focus-divider {
+    /* 2px is a design value like any other here, not a hairline meant to stay
+       one device pixel — it is a 10%-alpha rule between grid rows, and holding
+       it flat made it read thinner and thinner as the rows around it grew. */
+    height: calc(2 * var(--px));
+  }
+
+  .section-footer {
+    /* Only the bottom is restated: the top and the sides are already vw ramps
+       (6.9444vw and 6.6667vw), this one number was flat. */
+    padding-bottom: calc(32 * var(--px));
+  }
+
+  .portfolio-view-toggle {
+    gap: calc(8 * var(--px));
+    padding: calc(8 * var(--px)) calc(16 * var(--px));
+  }
+
+  .portfolio-view-btn {
+    padding: calc(4 * var(--px)) calc(6 * var(--px));
+    border-radius: calc(2 * var(--px));
+  }
+
+  .footer-legal {
+    gap: calc(40 * var(--px));
+  }
+
+  /* Portfolio's two views. Everything here is a flat Figma number: the 48px row
+     pitch the list is built on (16 gap against a 32 icon), and the card's whole
+     fixed geometry. */
+  .portfolio-list {
+    gap: calc(16 * var(--px));
+  }
+
+  .portfolio-list-extra {
+    padding-top: calc(16 * var(--px));
+  }
+
+  .portfolio-list-row {
+    gap: calc(20 * var(--px));
+  }
+
+  .portfolio-list-icon {
+    width: calc(32 * var(--px));
+    height: calc(32 * var(--px));
+    border-radius: calc(4 * var(--px));
+  }
+
+  .portfolio-list-mark {
+    width: calc(32 * var(--px));
+    height: calc(32 * var(--px));
+  }
+
+  .section-portfolio {
+    --card-h: calc(147 * var(--px));
+    --grid-gap: calc(24 * var(--px));
+  }
+
+  .portfolio-card {
+    padding: 0 calc(8 * var(--px));
+    border-radius: calc(6 * var(--px));
+  }
+
+  .portfolio-card-inner {
+    gap: calc(8 * var(--px));
+    width: calc(172 * var(--px));
+    margin-bottom: calc(15 * var(--px));
+  }
+
+  .portfolio-card-icon {
+    width: calc(44 * var(--px));
+    height: calc(44 * var(--px));
+  }
+
+  .portfolio-card-label {
+    font-size: var(--fluid-label);
+  }
+
+  .portfolio-button-wrap {
+    gap: calc(26 * var(--px));
+    margin-top: calc(40 * var(--px));
+  }
+
+  .portfolio-button {
+    padding: calc(12.5 * var(--px)) calc(24 * var(--px));
+  }
+
+  .footer-legal-disclaimer {
+    /* Flat at 588 it stayed put while its type grew, and the disclaimer wrapped
+       to a second line somewhere past 1600 — the one place the old flat values
+       actually changed the layout rather than just the rhythm. */
+    max-width: calc(588 * var(--px));
+  }
+
+  /* The shared EXPLORE cue, in all three places it is used — the hero, About and
+     Portfolio. Scaling the primitive once is what keeps the three consistent;
+     scoping it to one section is what made Portfolio's copy sit still while the
+     section around it grew. */
+  .explore-cue {
+    padding: calc(8 * var(--px));
+  }
+
+  .explore-cue-label {
+    font-size: var(--fluid-label);
+    letter-spacing: calc(0.42 * var(--px));
+  }
+
+  .explore-cue-arrow {
+    width: calc(32 * var(--px));
+    height: calc(32 * var(--px));
+  }
+
+  .hero-explore {
+    bottom: calc(56 * var(--px));
+    /* Same "less the cue's own padding" as the base rule, on the same ramp. */
+    left: calc(var(--hero-inset) - 8 * var(--px));
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * One optical cut for the three section sub-headings.
+ *
+ * `--fluid-subhead` already gives `.about-heading`, `.portfolio-subheading` and
+ * `.focus-roster-heading` one size at every width. They still did not match,
+ * because they were drawn in two different cuts of DM Sans: About on `opsz 28`
+ * (the display cut, pinned for the enlargement above 1440), the other two on
+ * `opsz 14` (the text cut — Portfolio by a rule of its own, Focus by
+ * inheritance from `.section-focus`, which pins the section for the sake of its
+ * 170px display heading).
+ *
+ * That is not a rounding difference. Measured on the built page, ink under the
+ * text cut against the same string under the display cut:
+ *
+ *   .about-heading         +2.60%   .portfolio-subheading  +3.09%
+ *   .focus-roster-heading  +2.52%
+ *
+ * and it holds at every width, 360 to 1920 — the gap does not close at small
+ * sizes the way the note on `.section-focus` assumes for the display heading.
+ * So two of the three sub-headings sat ~3% wider than the third at identical
+ * font-size.
+ *
+ * `opsz 28` is the cut kept, for three reasons:
+ *
+ *  - It is the only one with first-hand evidence AT THIS SIZE. Figma 549:507
+ *    renders the About heading at 486/485px of ink at 1440; the display cut
+ *    draws 489.48 there and the text cut 502.19.
+ *  - The other two pins were measured on 170px display type (`.focus-heading`,
+ *    `.portfolio-display` — see the notes there, which stay correct and which
+ *    this rule does not touch). The sub-headings inherited those pins without
+ *    a measurement of their own.
+ *  - 28 is the design size of these headings at 1440, so this is the value
+ *    `font-optical-sizing: auto` already picks at the design width.
+ *
+ * Pinned rather than left to `auto` because `auto` feeds the USED size into the
+ * axis, so above 1440 the face sets progressively narrower as the heading
+ * grows: About's ink ran x1.27 from 1440 to 1920 where the layout ran x1.3333,
+ * which reads as the title quietly condensing. Naming only `opsz` leaves `wght`
+ * to each rule's own `font-weight`.
+ *
+ * Source order: three single-class selectors overriding single-class selectors,
+ * so this has to come after all three base rules — hence the end of the file.
+ * -------------------------------------------------------------------------- */
+.about-heading,
+.portfolio-subheading,
+.focus-roster-heading {
+}

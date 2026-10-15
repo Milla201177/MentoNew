@@ -1,0 +1,60 @@
+/**
+ * Design Tokens - Tailwind v4
+ * Auto-generated from Figma variables. Do not edit directly.
+ * Source of truth: Figma file NE0P3kuK0r86ttPBjwrCxJ (Primitives + Semantic collections).
+ * Regenerate: figma_export_tokens({ format:'tailwind-v4', outputPath:'src/app/(frontend)/tokens.generated.css' })
+ *
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ STOP — this file is AHEAD of Figma. Regenerating right now REVERTS the   │
+ * │ 2026-09 rebrand: the whole site goes back to the sand surface and the    │
+ * │ green ink.                                                              │
+ * │                                                                         │
+ * │ Two primitives were edited here by hand because the Figma variables were │
+ * │ never updated when the design changed:                                   │
+ * │                                                                         │
+ * │     --color-palette-cream-50    #fbf7f0  ->  #ffffff                     │
+ * │     --color-palette-green-900   #0b4645  ->  #04212b                     │
+ * │                                                                         │
+ * │ Change those two in the Figma Primitives collection FIRST, then          │
+ * │ regenerate. The renamed-but-accurate values are kept under their old     │
+ * │ token names on purpose: renaming them would touch every consumer, and    │
+ * │ the export would put the old names straight back.                        │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ */
+
+@theme {
+  /* Primitives */
+  --color-palette-teal-500: #258a86;
+  --color-palette-teal-600: #2a8a82;
+  --color-palette-green-900: #04212b; /* hand-edited — see header */
+  --color-palette-cream-50: #ffffff; /* hand-edited — see header; no longer cream */
+  --color-palette-mint-300: #98ede0;
+  --color-palette-mint-50: #e7f9f2;
+  --color-palette-green-accent: #147a3a;
+  --color-palette-white: #ffffff;
+  --color-palette-black: #000000;
+  --radius-1: 4px;
+  --radius-2: 8px;
+  --radius-lg: 16px;
+  --spacing-2: 8px;
+  --spacing-3: 12.5px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --font-size-label: 14px;
+  --font-size-display: 48px;
+  --font-size-hero: 64px;
+  --font-tracking-label: 0.42px;
+  /* Semantic */
+  --color-surface-page: var(--color-palette-cream-50);
+  --color-text-primary: var(--color-palette-green-900);
+  --color-text-on-dark: var(--color-palette-white);
+  --color-pill-tag-bg: #0000001a;
+  --color-pill-tag-bg-teal: #32a9a71a;
+  --color-pill-btn-bg: var(--color-palette-green-900);
+  --color-pill-btn-text: var(--color-palette-white);
+  --radius-pill: var(--radius-1);
+  --radius-card: var(--radius-lg);
+  --font-display-size: var(--font-size-display);
+  --label-size: var(--font-size-label);
+  --label-tracking: var(--font-tracking-label);
+}

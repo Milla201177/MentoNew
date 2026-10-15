@@ -1,0 +1,14 @@
+# Mento VC — how to report a security issue.
+#
+# RFC 9116. Crawlers and researchers look here first; without it a finder has to
+# guess an address, and the usual guess is a public channel.
+
+Contact: mailto:welcome@mento.vc
+Expires: 2027-08-31T00:00:00.000Z
+Preferred-Languages: en
+
+# Note for whoever updates this: `Expires` is mandatory and the file is treated
+# as stale once it passes, so this needs renewing before 31 August 2027. The
+# Canonical URL below has to match where the file is actually served, so it
+# changes with the domain.
+Canonical: https://mento-astro.vercel.app/.well-known/security.txt
