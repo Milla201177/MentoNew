@@ -41,6 +41,24 @@ try {
   })
   await rm(output,{recursive:true,force:true})
   await cp(join(scratch,'out'),output,{recursive:true})
+  // Metadata icon names can differ between HTML and emitted static route files.
+  const emitted = await readdir(output)
+  const icon = emitted.find(name => /^icon-.*\.svg$/.test(name))
+  const apple = emitted.find(name => /^apple-icon-.*\.png$/.test(name))
+  const ensureIcons = async directory => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = join(directory, entry.name)
+      if (entry.isDirectory() && entry.name !== '_next') await ensureIcons(file)
+      else if (/\.(html|txt)$/.test(entry.name)) {
+        const html = await readFile(file, 'utf8')
+        for (const match of html.matchAll(/(?:apple-icon-[a-z0-9]+\.png|icon-[a-z0-9]+\.svg)/g)) {
+          const source = match[0].startsWith('apple-') ? apple : icon
+          if (source && source !== match[0]) await cp(join(output, source), join(output, match[0]))
+        }
+      }
+    }
+  }
+  await ensureIcons(output)
   await writeFile(join(output,'.nojekyll'),'')
   console.log(`GitHub Pages export ready: ${output}`)
 } finally {
