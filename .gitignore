@@ -67,3 +67,6 @@ build.log
 # is the one that will have a real value in it.
 *.env
 !.env.example
+
+# Static publishing output
+.pages-output/
