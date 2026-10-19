@@ -11,7 +11,7 @@ import logoWidths from '@/lib/aboutLogoWidths.json'
 import { safeHref } from '@/lib/safeHref'
 
 /** Seconds per logo: independent of the number of companies. */
-const SECONDS_PER_LOGO = 7
+const SECONDS_PER_LOGO = 8
 
 const PARAGRAPHS = [
   `We are a new venture firm purpose-built to support a new generation of AI-native companies. We believe a new kind of company can turn the power of AI models into real products and services, and change whole industries along the way. And going first is a job only for obsessed founders, the ones who couldn't do anything else if they tried.`,
@@ -27,10 +27,6 @@ export default function AboutContent({ companies }: { companies: Company[] }) {
     const strip = root.current?.querySelector<HTMLElement>('.about-logos')
     const track = strip?.querySelector<HTMLElement>('.about-logo-track')
     if (!strip || !track) return
-    const rate = (value: number) => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-      track.getAnimations().forEach((animation) => animation.updatePlaybackRate(value))
-    }
     const horizontal = () => window.matchMedia('(max-width: 1024px)').matches
     const seek = (distance: number) => {
       const animation = track.getAnimations()[0]
@@ -79,10 +75,6 @@ export default function AboutContent({ companies }: { companies: Company[] }) {
         dragged = false
       }
     }
-    const enter = () => rate(1.25)
-    const leave = () => rate(1)
-    strip.addEventListener('pointerenter', enter)
-    strip.addEventListener('pointerleave', leave)
     strip.addEventListener('wheel', wheel, { passive: false })
     strip.addEventListener('pointerdown', down)
     strip.addEventListener('pointermove', move)
@@ -92,8 +84,6 @@ export default function AboutContent({ companies }: { companies: Company[] }) {
     const stopDrag = (event: DragEvent) => event.preventDefault()
     strip.addEventListener('dragstart', stopDrag)
     return () => {
-      strip.removeEventListener('pointerenter', enter)
-      strip.removeEventListener('pointerleave', leave)
       strip.removeEventListener('wheel', wheel)
       strip.removeEventListener('pointerdown', down)
       strip.removeEventListener('pointermove', move)
@@ -101,7 +91,6 @@ export default function AboutContent({ companies }: { companies: Company[] }) {
       strip.removeEventListener('pointercancel', up)
       strip.removeEventListener('click', click, true)
       strip.removeEventListener('dragstart', stopDrag)
-      rate(1)
     }
   }, [])
 

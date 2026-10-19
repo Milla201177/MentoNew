@@ -43,6 +43,7 @@ const logos: Record<string, string> = {
   '/portfolio/logos/command-code.svg': '/portfolio/about-logos/command-code.svg',
   '/portfolio/logos/edian.svg': '/portfolio/about-logos/edian.svg',
   '/portfolio/logos/eragon-ai.svg': '/portfolio/about-logos/eragon-ai.svg',
+  '/portfolio/logos/hellyeah-ai.svg': '/portfolio/about-logos/hellyeah-ai.svg',
   '/portfolio/logos/final-round-ai.svg': '/portfolio/about-logos/final-round-ai.svg',
   '/portfolio/logos/herostuff.svg': '/portfolio/about-logos/herostuff.svg',
   '/portfolio/logos/hyperspell.svg': '/portfolio/about-logos/hyperspell.svg',

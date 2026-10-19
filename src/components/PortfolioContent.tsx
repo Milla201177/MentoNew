@@ -72,7 +72,8 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     // Browser toolbars change innerHeight while scrolling. The small viewport
     // stays stable, so companies do not move between the main and extra lists.
     const viewport = document.createElement('div')
-    viewport.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none'
+    viewport.style.cssText =
+      'position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none'
     viewport.setAttribute('aria-hidden', 'true')
     document.body.appendChild(viewport)
     let disposed = false
@@ -134,7 +135,15 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
           used -= last.offsetHeight + gap
           count--
         }
-        setVisibleCount(Math.max(1, count))
+        // Show four more companies in the preview, even when it exceeds one screen.
+        const items = section.querySelectorAll<HTMLElement>(
+          '.portfolio-view-list .portfolio-list-row',
+        )
+        const previewCount = Math.min(items.length, Math.max(1, count) + 4)
+        used = Array.from(items)
+          .slice(0, previewCount)
+          .reduce((height, item, index) => height + item.offsetHeight + (index ? gap : 0), 0)
+        setVisibleCount(previewCount)
         section.style.setProperty('--portfolio-view-height', `${used}px`)
       }
       if (listView && previousStyle !== undefined) listView.style.cssText = previousStyle
@@ -368,16 +377,19 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
         }}
       >
         <span className="portfolio-card-inner">
-          <img
-            className="portfolio-card-icon"
-            src={company.icon ?? company.logo}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-          />
+          <span className="portfolio-card-icon-slot">
+            <img
+              className="portfolio-card-icon"
+              src={company.icon ?? company.logo}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
           <span className="portfolio-card-label">
-            {company.name} — {company.desc}
+            <span className="portfolio-card-name">{company.name}</span>
+            <span className="portfolio-card-description">{company.desc}</span>
           </span>
         </span>
       </Card>
@@ -412,7 +424,7 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
             {company.name}
           </span>
           <span className="portfolio-list-dash" aria-hidden="true">
-            {' — '}
+            {' ... '}
           </span>
           <span className="portfolio-list-desc">{company.desc}</span>
         </span>

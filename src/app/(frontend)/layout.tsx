@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { OG_IMAGE_URL } from '@/lib/ogImage'
 import GridOverlayGate from '@/components/GridOverlayGate'
-import BrandCursor from '@/components/BrandCursor'
 import DesktopSectionSpacing from '@/components/DesktopSectionSpacing'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import './globals.css'
@@ -154,7 +153,6 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {/* Draws the layout grid over the page, but only for a URL carrying
             `?grid`. See GridOverlayGate for why it costs a visitor nothing. */}
         <GridOverlayGate />
-        <BrandCursor />
         <DesktopSectionSpacing />
       </body>
     </html>

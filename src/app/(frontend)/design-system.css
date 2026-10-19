@@ -1121,9 +1121,7 @@ button.portfolio-button:hover {
 @media (hover: hover) and (pointer: fine) {
   body,
   body * {
-    cursor:
-      url('/icons/mento-cursor.svg') 5 5,
-      default;
+    cursor: default;
   }
   input,
   textarea,
@@ -1165,9 +1163,7 @@ button.portfolio-button:hover {
 @media (hover: hover) and (pointer: fine) {
   body a[href],
   body button:not(:disabled) {
-    cursor:
-      url('/icons/mento-cursor.svg') 5 5,
-      default;
+    cursor: pointer;
   }
 }
 
@@ -1178,15 +1174,6 @@ button.portfolio-button:hover {
   margin-bottom: 0;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .hero,
-  .hero *,
-  body .hero a[href] {
-    cursor:
-      url('/icons/mento-cursor-hero.svg') 5 5,
-      default;
-  }
-}
 .portfolio-grid {
   row-gap: 16px;
   align-content: stretch;
@@ -1293,37 +1280,4 @@ button.portfolio-button:hover {
 }
 .portfolio-card:focus-visible::before {
   opacity: 0.45;
-}
-
-/* Outline crossfades at the Hero boundary; pointer position has no transition. */
-.brand-cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 2147483647;
-  pointer-events: none;
-  visibility: hidden;
-}
-.brand-cursor path {
-  stroke-opacity: 0;
-  transition: stroke-opacity 400ms ease-in-out;
-}
-.brand-cursor[data-hero='true'] path {
-  stroke-opacity: 1;
-}
-@media (hover: hover) and (pointer: fine) {
-  .has-brand-cursor,
-  .has-brand-cursor * {
-    cursor: none !important;
-  }
-  .has-brand-cursor input,
-  .has-brand-cursor textarea,
-  .has-brand-cursor [contenteditable='true'] {
-    cursor: text !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .brand-cursor path {
-    transition: none;
-  }
 }

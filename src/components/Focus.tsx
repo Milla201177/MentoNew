@@ -4,9 +4,6 @@
 
 import { Fragment } from 'react'
 
-/* Copy supplied by the client. The Figma frame named in the header comment is
- * still the source for this section's layout and type, but no longer for these
- * three sentences — #02 and #03 were rewritten, #01 came back unchanged. */
 const FOCUS_ITEMS = [
   {
     num: '#01',
@@ -46,8 +43,6 @@ const ROSTER: { name: string; role: string; emoji?: string; linkedin?: string }[
     emoji: '\u{1F9A6}',
     linkedin: 'https://www.linkedin.com/in/dmitry-golomidov/',
   },
-  // The crown comes back with her — it sat on Margo only because the sheet
-  // that assigned it covered nobody else, and that note said to swap it back.
   {
     name: 'Katie',
     role: 'Ops/Partner',
@@ -130,9 +125,6 @@ export default function Focus() {
                 <div
                   className={`focus-item${idx === 0 ? ' is-lead' : ''}${item.num === '#03' ? ' is-caption' : ''}`}
                 >
-                  {/* Figma 545:455 stacks the number over the title in a column
-                      of its own, with the description beside it — the two are
-                      bottom-aligned, not top-aligned. */}
                   <div className="focus-item-head">
                     <span className="focus-item-num">{item.num}</span>
                     <h2 className="focus-item-title">{item.title}</h2>

@@ -59,7 +59,7 @@ export default function Navbar({ darkHero = false }: { darkHero?: boolean }) {
     }
   }, [darkHero])
 
-  // Fade the whole lockup before its visible area meets page text.
+  // Fade the whole lockup before it meets text, brand marks or controls.
   useEffect(() => {
     const nav = root.current
     const logo = nav?.querySelector<HTMLElement>('.logo')
@@ -99,7 +99,9 @@ export default function Navbar({ darkHero = false }: { darkHero?: boolean }) {
       }
       if (!touching) {
         touching = Array.from(
-          document.querySelectorAll('.about-logos, button, .portfolio-toolbar'),
+          document.querySelectorAll(
+            '.about-logos, .portfolio-list-icon, .portfolio-card-icon, .focus-roster-emoji, button, .portfolio-toolbar',
+          ),
         ).some(
           (element) =>
             getComputedStyle(element).display !== 'none' &&

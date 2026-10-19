@@ -27,6 +27,19 @@ export default function DesktopSectionSpacing() {
     const update = () => {
       frame = 0
       if (!active || !window.matchMedia('(min-width: 1025px)').matches) return
+      const aboutCopy = document.querySelector<HTMLElement>('.about-copy-text')
+      const aboutCue = document.querySelector<HTMLElement>('.about-explore')
+      const portfolio = document.querySelector<HTMLElement>('.section-portfolio')
+      if (aboutCopy && aboutCue && portfolio) {
+        const gap = Math.max(
+          0,
+          aboutCue.getBoundingClientRect().top - aboutCopy.getBoundingClientRect().bottom,
+        )
+        const value = `${gap.toFixed(2)}px`
+        if (portfolio.style.getPropertyValue('--portfolio-cue-gap') !== value) {
+          portfolio.style.setProperty('--portfolio-cue-gap', value)
+        }
+      }
       for (const [cueSelector, sectionSelector, headingSelector] of [
         ['.about-explore', '.section-portfolio', '.portfolio-display'],
         ['.portfolio-explore', '.section-focus', '.focus-heading'],

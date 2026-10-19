@@ -75,9 +75,6 @@
     width: 100%;
     height: 128px;
   }
-  .portfolio-button {
-    min-height: 48px;
-  }
   .portfolio-view-btn {
     min-height: 40px;
     min-width: 48px;
@@ -156,9 +153,6 @@
     --type-h1-leading: 44px;
     --type-h2: 22px;
     --type-h2-leading: 30px;
-  }
-  html {
-    overflow-anchor: none;
   }
   .section-about,
   .section-portfolio,
@@ -335,7 +329,6 @@
   .section-portfolio {
     justify-content: flex-start;
     padding-top: var(--desktop-heading-inset, 128px);
-    padding-bottom: 256px;
   }
   .section-portfolio.is-expanded {
     padding-top: var(--portfolio-top-lock, var(--desktop-heading-inset, 128px));
@@ -382,4 +375,149 @@
 /* Do not anchor the viewport to the section following an expanding portfolio. */
 html {
   overflow-anchor: none;
+}
+
+/* One rhythm across the visible list and its expanding continuation. */
+.portfolio-list {
+  --portfolio-row-gap: 8px;
+  row-gap: var(--portfolio-row-gap);
+}
+.portfolio-list-extra {
+  padding-top: var(--portfolio-row-gap);
+}
+/* Show All stays smaller than the view selector. */
+.portfolio-button {
+  box-sizing: border-box;
+  width: 96px;
+  height: 32px;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+@media (min-width: 641px) {
+  .portfolio-view-toggle {
+    box-sizing: border-box;
+    height: 56px;
+    min-height: 56px;
+  }
+}
+@media (min-width: 1025px) {
+  .portfolio-view-toggle {
+    height: 48px;
+    min-height: 48px;
+  }
+  .focus-list {
+    align-self: center;
+  }
+}
+@media (max-width: 640px) {
+  .focus-roster-row {
+    gap: 8px;
+  }
+  .focus-roster-emoji {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+  }
+}
+
+.portfolio-card-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.portfolio-card-name {
+  font-weight: 700;
+  color: var(--color-text-primary, #04212b);
+}
+.portfolio-card-description {
+  font-weight: 400;
+  min-height: calc(2 * var(--type-body-leading));
+}
+
+@media (min-width: 1025px) {
+  .section-portfolio,
+  .section-portfolio:not(.is-expanded) {
+    height: auto;
+    min-height: 100svh;
+    padding-bottom: 96px;
+  }
+  .portfolio-explore {
+    position: relative;
+    bottom: auto;
+    left: -8px;
+    align-self: flex-start;
+    margin-top: var(--portfolio-cue-gap, 80px);
+  }
+}
+
+@media (min-width: 1025px) {
+  .about-explore {
+    bottom: 128px;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .about-explore {
+    bottom: 80px;
+  }
+}
+
+/* New SVG marks fill their canvas; match the visible size of existing PNGs. */
+:is(.portfolio-list-mark, .portfolio-card-icon):is(
+  [src$='/hellyeah-ai.svg'],
+  [src$='/brand.svg'],
+  [src$='/clerk-ai.svg']
+) {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* Reserve two description lines; centre short and long captions consistently. */
+.portfolio-card-inner {
+  box-sizing: border-box;
+  height: auto;
+  padding-top: 0;
+  justify-content: flex-start;
+}
+.portfolio-card-icon-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+
+/* Reference rhythm: one steady stream, strongest in the centre, fading at both edges. */
+@media (min-width: 1025px) {
+  .about-logos {
+    mask-image: linear-gradient(to bottom, transparent, #000 50%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 50%, transparent);
+  }
+  .about-logo-item {
+    height: 104px;
+    margin-bottom: 16px;
+  }
+}
+@media (max-width: 1024px) {
+  .about-logos {
+    mask-image: linear-gradient(to right, transparent, #000 25%, #000 75%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 25%, #000 75%, transparent);
+  }
+}
+
+/* Fill the currently visible viewport from the first paint, including mobile browser chrome. */
+.hero {
+  height: 100vh;
+  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: clip;
+}
+.hero .content {
+  height: 100%;
 }
