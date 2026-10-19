@@ -69,7 +69,18 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
   useEffect(() => {
     const section = root.current
     if (!section) return
+    // Browser toolbars change innerHeight while scrolling. The small viewport
+    // stays stable, so companies do not move between the main and extra lists.
+    const viewport = document.createElement('div')
+    viewport.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none'
+    viewport.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(viewport)
+    let disposed = false
+    let previousWidth = window.innerWidth
+    let previousHeight = viewport.getBoundingClientRect().height
     const fit = () => {
+      if (disposed) return
+      const viewportHeight = viewport.getBoundingClientRect().height
       const style = getComputedStyle(section)
       const header = section.querySelector<HTMLElement>('.portfolio-header')
       const footer = section.querySelector<HTMLElement>('.portfolio-button-wrap')
@@ -81,12 +92,12 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
         header.getBoundingClientRect().bottom -
         section.getBoundingClientRect().top +
         (parseFloat(getComputedStyle(header).marginBottom) || 0)
-      const desktopBudget = window.innerHeight - 96 - (explore?.offsetHeight || 48) - 112 - listTop
+      const desktopBudget = viewportHeight - 96 - (explore?.offsetHeight || 48) - 112 - listTop
       const budget = desktop
         ? Math.max(48, desktopBudget)
         : Math.max(
             48,
-            window.innerHeight -
+            viewportHeight -
               parseFloat(style.paddingTop) -
               (mobile
                 ? parseFloat(style.paddingBottom)
@@ -131,13 +142,23 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     }
     fit()
     const reflow = () => {
+      const width = window.innerWidth
+      const height = viewport.getBoundingClientRect().height
+      if (width === previousWidth && Math.abs(height - previousHeight) < 1) return
+      previousWidth = width
+      previousHeight = height
       section.style.removeProperty('--portfolio-top-lock')
       fit()
     }
+    const viewportObserver = new ResizeObserver(reflow)
+    viewportObserver.observe(viewport)
     window.addEventListener('resize', reflow)
     section.addEventListener('section-spacing-change', fit)
     document.fonts.ready.then(fit)
     return () => {
+      disposed = true
+      viewportObserver.disconnect()
+      viewport.remove()
       window.removeEventListener('resize', reflow)
       section.removeEventListener('section-spacing-change', fit)
     }
