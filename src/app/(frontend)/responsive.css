@@ -209,7 +209,7 @@
     flex-shrink: 0;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 0;
   }
   .footer-legal-copy {
     max-width: none;
@@ -287,12 +287,6 @@
   .footer-legal {
     align-items: flex-end;
   }
-  .portfolio-toolbar {
-    top: calc(var(--portfolio-controls-edge) + 8px);
-  }
-  .portfolio-button-wrap {
-    top: calc(var(--portfolio-controls-edge) + 64px);
-  }
 }
 @media (max-width: 640px) {
   .navbar.is-mobile-compact .logo {
@@ -334,9 +328,9 @@ html {
   width: 96px;
   height: 32px;
   min-height: 32px;
-  padding: 6px 12px;
-  font-size: 12px;
-  line-height: 20px;
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 16px;
 }
 @media (min-width: 641px) {
   .portfolio-toolbar {
@@ -345,10 +339,14 @@ html {
   .portfolio-view-toggle {
     box-sizing: border-box;
     height: 48px;
-    min-height: 48px;
+    min-height: 0;
+    padding: 8px 12px;
   }
   .portfolio-view-btn {
-    min-height: 32px;
+    min-height: 0;
+    height: 100%;
+    padding: 0 6px;
+    line-height: 16px;
   }
 }
 @media (min-width: 1025px) {
@@ -460,7 +458,9 @@ html {
 }
 .hero .content {
   height: 100%;
-  transform: translateY(min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 264px) / 2 - 160px)));
+  transform: translateY(
+    min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 264px) / 2 - 160px))
+  );
 }
 
 /* Keep the desktop composition usable when the window is short. The copy,
@@ -470,7 +470,9 @@ html {
     min-height: max(840px, 100svh, var(--about-content-min-height, 840px));
   }
   .hero .content {
-    transform: translateY(min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 192px) / 2 - 208px)));
+    transform: translateY(
+      min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 192px) / 2 - 208px))
+    );
   }
 }
 

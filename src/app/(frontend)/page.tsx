@@ -5,6 +5,7 @@ import Focus from '@/components/Focus'
 import Portfolio from '@/components/Portfolio'
 import Footer from '@/components/Footer'
 import ResizeAnchor from '@/components/ResizeAnchor'
+import ReloadPosition from '@/components/ReloadPosition'
 import { SITE_URL, SOCIAL_LINKS } from '@/lib/site'
 
 /**
@@ -106,6 +107,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <ResizeAnchor />
+      <ReloadPosition />
     </>
   )
 }

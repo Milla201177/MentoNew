@@ -546,7 +546,7 @@ button,
 .footer-legal-right {
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 0;
 }
 .footer-legal-links {
   display: flex;
@@ -897,21 +897,18 @@ button,
   }
 }
 .portfolio-toolbar {
-  top: calc(var(--portfolio-controls-edge) + 8px);
+  top: var(--portfolio-toolbar-top, 0px);
   bottom: auto;
   transform: none;
 }
 .portfolio-button-wrap {
-  top: calc(var(--portfolio-controls-edge) + 64px);
+  top: var(--portfolio-button-top, 64px);
   bottom: auto;
   transform: none;
 }
 @media (max-width: 640px) {
   .portfolio-header {
     padding-right: 96px;
-  }
-  .portfolio-button-wrap {
-    top: var(--portfolio-controls-edge);
   }
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {

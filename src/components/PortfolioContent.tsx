@@ -1,6 +1,7 @@
 'use client'
 
 import { scrollToScreen } from '@/lib/scrollToScreen'
+import { readReloadState } from '@/lib/reloadState'
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import ScrambleButton from '@/components/ScrambleButton'
@@ -39,6 +40,17 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
   const chosenViewRef = useRef<'grid' | 'list'>('list')
   const releaseScrollGuard = useRef<(() => void) | null>(null)
   useEffect(() => () => releaseScrollGuard.current?.(), [])
+  useLayoutEffect(() => {
+    const saved = readReloadState()
+    if (!saved) return
+    const frame = requestAnimationFrame(() => {
+      chosenViewRef.current = saved.view
+      setViewMode(window.matchMedia(PHONE_LIST_ONLY).matches ? 'list' : saved.view)
+      setExpanded(saved.expanded)
+      setRenderedExpanded(saved.expanded)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   const preserveExpansionScroll = () => {
     releaseScrollGuard.current?.()
@@ -129,19 +141,48 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
   useEffect(() => {
     const section = root.current
     if (!section) return
+    const heading = section.querySelector<HTMLElement>('.portfolio-display')
+    const toolbar = section.querySelector<HTMLElement>('.portfolio-toolbar')
+    const button = section.querySelector<HTMLElement>('.portfolio-button')
+    const buttonWrap = section.querySelector<HTMLElement>('.portfolio-button-wrap')
+    if (!heading || !toolbar || !button || !buttonWrap) return
+    let active = true
+    const setPosition = (property: string, pixels: number) => {
+      const value = `${pixels.toFixed(2)}px`
+      if (section.style.getPropertyValue(property) !== value) {
+        section.style.setProperty(property, value)
+      }
+    }
+    const metrics = document.createElement('canvas').getContext('2d')
+    const capitalTop = (element: HTMLElement) => {
+      const box = element.getBoundingClientRect()
+      if (!metrics) return box.top
+      const style = getComputedStyle(element)
+      metrics.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+      const ink = metrics.measureText('H')
+      const lineHeight = parseFloat(style.lineHeight)
+      const ascent = ink.fontBoundingBoxAscent ?? parseFloat(style.fontSize) * 0.8
+      const descent = ink.fontBoundingBoxDescent ?? parseFloat(style.fontSize) * 0.2
+      const baseline = (lineHeight - ascent - descent) / 2 + ascent
+      return box.top + baseline - ink.actualBoundingBoxAscent
+    }
     const alignControls = () => {
-      const selector = '.portfolio-header'
-      const content = section.querySelector<HTMLElement>(selector)
-      if (!content) return
-      const edge = content.getBoundingClientRect().top - section.getBoundingClientRect().top
-      section.style.setProperty('--portfolio-controls-edge', `${edge}px`)
+      if (!active || !toolbar.offsetHeight) return
+      const top = capitalTop(heading) - section.getBoundingClientRect().top
+      const buttonOffset =
+        button.getBoundingClientRect().top - buttonWrap.getBoundingClientRect().top
+      setPosition('--portfolio-toolbar-top', top)
+      setPosition('--portfolio-button-top', top + toolbar.offsetHeight + 16 - buttonOffset)
     }
     alignControls()
     const observer = new ResizeObserver(alignControls)
     const container = section.querySelector('.portfolio-container')
     if (container) observer.observe(container)
+    for (const element of [heading, toolbar, button]) observer.observe(element)
+    document.fonts.ready.then(alignControls)
     window.addEventListener('resize', alignControls)
     return () => {
+      active = false
       observer.disconnect()
       window.removeEventListener('resize', alignControls)
     }

@@ -108,7 +108,9 @@ export default function DesktopSectionSpacing() {
     }
     const observer = new ResizeObserver(schedule)
     document
-      .querySelectorAll('.section-about, .about-grid, #hero-heading, .section-portfolio, .focus-container')
+      .querySelectorAll(
+        '.section-about, .about-grid, #hero-heading, .section-portfolio, .focus-container',
+      )
       .forEach((e) => observer.observe(e))
     window.addEventListener('resize', schedule)
     document.fonts.ready.then(schedule)

@@ -2,12 +2,26 @@
 
 /** Full logo header with contrast inversion over the black Hero. */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type MouseEvent } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 
 export default function Navbar({ darkHero = false }: { darkHero?: boolean }) {
   const root = useRef<HTMLElement>(null)
+
+  const goToTop = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return
+    if (!document.querySelector('.hero')) return
+    event.preventDefault()
+    window.history.replaceState(window.history.state, '', location.pathname + location.search)
+    window.scrollTo({
+      top: 0,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
+    })
+  }
 
   // ---- Navbar fade-in (gated behind reduced-motion) ----
   useEffect(() => {
@@ -138,7 +152,7 @@ export default function Navbar({ darkHero = false }: { darkHero?: boolean }) {
           so it still reads as "Mento" once the wordmark is only a fade away —
           alt text on a hidden image would not.
           Figma 311:745: 140x27.5. Links home, like any header logo. */}
-      <Link href="/" className="logo" aria-label="Mento">
+      <Link href="/" className="logo" aria-label="Mento" onClick={goToTop}>
         <img
           className="logo-mark"
           src="/logos/logomark.svg"
