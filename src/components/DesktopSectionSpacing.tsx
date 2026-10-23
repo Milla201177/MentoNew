@@ -2,6 +2,15 @@
 
 import { useEffect } from 'react'
 
+const MIN_CUE_GAP = 64
+
+function setPixelProperty(element: HTMLElement, name: string, pixels: number) {
+  const value = `${pixels.toFixed(2)}px`
+  if (element.style.getPropertyValue(name) !== value) {
+    element.style.setProperty(name, value)
+  }
+}
+
 /** Keep desktop gaps between painted lettering, rather than padded link boxes. */
 export default function DesktopSectionSpacing() {
   useEffect(() => {
@@ -30,7 +39,7 @@ export default function DesktopSectionSpacing() {
       const hero = document.querySelector<HTMLElement>('.hero')
       const heroHeading = document.querySelector<HTMLElement>('#hero-heading')
       if (hero && heroHeading) {
-        hero.style.setProperty('--hero-copy-height', `${heroHeading.getBoundingClientRect().height}px`)
+        setPixelProperty(hero, '--hero-copy-height', heroHeading.getBoundingClientRect().height)
       }
       if (!window.matchMedia('(min-width: 1025px)').matches) return
       const aboutCopy = document.querySelector<HTMLElement>('.about-copy-text')
@@ -43,19 +52,20 @@ export default function DesktopSectionSpacing() {
         const grid = aboutGrid.getBoundingClientRect()
         const copyBottom = aboutCopy.getBoundingClientRect().bottom - grid.top
         // The centred grid needs room for the copy, a 64px gap, and the cue.
-        const minimum = 2 * (128 + aboutCue.offsetHeight + 64 + copyBottom)
-          + parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - grid.height
-        about.style.setProperty('--about-content-min-height', `${Math.ceil(minimum)}px`)
+        const cueInset = parseFloat(getComputedStyle(aboutCue).bottom)
+        const minimum =
+          2 * (cueInset + aboutCue.offsetHeight + MIN_CUE_GAP + copyBottom) +
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom) -
+          grid.height
+        setPixelProperty(about, '--about-content-min-height', Math.ceil(minimum))
       }
       if (aboutCopy && aboutCue && portfolio) {
         const gap = Math.max(
-          64,
+          MIN_CUE_GAP,
           aboutCue.getBoundingClientRect().top - aboutCopy.getBoundingClientRect().bottom,
         )
-        const value = `${gap.toFixed(2)}px`
-        if (portfolio.style.getPropertyValue('--portfolio-cue-gap') !== value) {
-          portfolio.style.setProperty('--portfolio-cue-gap', value)
-        }
+        setPixelProperty(portfolio, '--portfolio-cue-gap', gap)
       }
       for (const [cueSelector, sectionSelector, headingSelector] of [
         ['.about-explore', '.section-portfolio', '.portfolio-display'],
@@ -90,7 +100,7 @@ export default function DesktopSectionSpacing() {
         const text = Array.from(focus.querySelectorAll<HTMLElement>('p, .focus-roster-body'))
         const bottom = Math.max(...text.map((element) => ink(element).bottom))
         const gap = 258 - (focus.getBoundingClientRect().bottom - bottom)
-        footer.style.setProperty('--desktop-footer-gap', `${gap.toFixed(2)}px`)
+        setPixelProperty(footer, '--desktop-footer-gap', gap)
       }
     }
     const schedule = () => {
