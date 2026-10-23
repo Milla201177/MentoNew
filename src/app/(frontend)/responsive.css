@@ -395,7 +395,7 @@ html {
     bottom: auto;
     left: -8px;
     align-self: flex-start;
-    margin-top: var(--portfolio-cue-gap, 80px);
+    margin-top: max(64px, var(--portfolio-cue-gap, 80px));
   }
 }
 
@@ -460,16 +460,17 @@ html {
 }
 .hero .content {
   height: 100%;
+  transform: translateY(min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 264px) / 2 - 160px)));
 }
 
 /* Keep the desktop composition usable when the window is short. The copy,
    the 64px cue gap and the cue's bottom inset must fit before centring. */
 @media (min-width: 1025px) {
   .section-about {
-    min-height: max(840px, 100svh);
+    min-height: max(840px, 100svh, var(--about-content-min-height, 840px));
   }
   .hero .content {
-    transform: translateY(min(64px, calc(50dvh - 304px)));
+    transform: translateY(min(64px, calc(max(320px, 50svh) - var(--hero-copy-height, 192px) / 2 - 208px)));
   }
 }
 

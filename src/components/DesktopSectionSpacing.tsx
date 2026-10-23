@@ -26,13 +26,30 @@ export default function DesktopSectionSpacing() {
     }
     const update = () => {
       frame = 0
-      if (!active || !window.matchMedia('(min-width: 1025px)').matches) return
+      if (!active) return
+      const hero = document.querySelector<HTMLElement>('.hero')
+      const heroHeading = document.querySelector<HTMLElement>('#hero-heading')
+      if (hero && heroHeading) {
+        hero.style.setProperty('--hero-copy-height', `${heroHeading.getBoundingClientRect().height}px`)
+      }
+      if (!window.matchMedia('(min-width: 1025px)').matches) return
       const aboutCopy = document.querySelector<HTMLElement>('.about-copy-text')
       const aboutCue = document.querySelector<HTMLElement>('.about-explore')
       const portfolio = document.querySelector<HTMLElement>('.section-portfolio')
+      const about = document.querySelector<HTMLElement>('.section-about')
+      const aboutGrid = document.querySelector<HTMLElement>('.about-grid')
+      if (about && aboutCopy && aboutCue && aboutGrid) {
+        const style = getComputedStyle(about)
+        const grid = aboutGrid.getBoundingClientRect()
+        const copyBottom = aboutCopy.getBoundingClientRect().bottom - grid.top
+        // The centred grid needs room for the copy, a 64px gap, and the cue.
+        const minimum = 2 * (128 + aboutCue.offsetHeight + 64 + copyBottom)
+          + parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - grid.height
+        about.style.setProperty('--about-content-min-height', `${Math.ceil(minimum)}px`)
+      }
       if (aboutCopy && aboutCue && portfolio) {
         const gap = Math.max(
-          0,
+          64,
           aboutCue.getBoundingClientRect().top - aboutCopy.getBoundingClientRect().bottom,
         )
         const value = `${gap.toFixed(2)}px`
@@ -81,7 +98,7 @@ export default function DesktopSectionSpacing() {
     }
     const observer = new ResizeObserver(schedule)
     document
-      .querySelectorAll('.section-about, .section-portfolio, .focus-container')
+      .querySelectorAll('.section-about, .about-grid, #hero-heading, .section-portfolio, .focus-container')
       .forEach((e) => observer.observe(e))
     window.addEventListener('resize', schedule)
     document.fonts.ready.then(schedule)
