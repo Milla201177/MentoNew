@@ -424,25 +424,6 @@
  * own tasks). `cursor: none` is part of the custom-cursor task and is omitted.
  * -------------------------------------------------------------------------- */
 
-/* Full-screen fixed WebGL background canvas (HeroShader.tsx). Decorative,
- * sits behind all content (z-index 0) and never intercepts pointer events. */
-#canvas {
-  /* ABSOLUTE (not fixed) so the hero shader is scoped to the Hero section and
-   * scrolls away with it. Fixed made it bleed behind EVERY section (a second
-   * shader layer showing through under every later section). .hero is
-   * position:relative; height:100vh; width:100% → this fills exactly the
-   * viewport-sized hero box. */
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  /* The shader draws WHITE elements on black; screen-blending over the cloud
-   * photo (.hero-bg) lightens only — black areas leave the photo untouched. */
-  mix-blend-mode: screen;
-}
-
 /* Top gradient overlay */
 /* Cloud photo behind the (now transparent) WebGL shader — the shader's rays/dots
  * animate over it. Fixed like #canvas so it sits directly behind the shader. */
@@ -513,10 +494,7 @@
    * below 1920 the gutter wins and nothing changes, above it the centring term
    * takes over. `100%` rather than `100vw` on purpose — `100vw` counts the
    * scrollbar, so it would reintroduce the same drift it is here to remove. */
-  --hero-inset: max(
-    var(--grid-margin, 200px),
-    calc((100% - var(--fluid-container, 1040px)) / 2)
-  );
+  --hero-inset: max(var(--grid-margin, 200px), calc((100% - var(--fluid-container, 1040px)) / 2));
 }
 
 /* Content */
@@ -1101,7 +1079,6 @@ html {
   margin: 0;
 }
 
-
 .about-cta-row {
   display: flex;
   flex-direction: column;
@@ -1200,7 +1177,6 @@ html {
     margin-left: calc(-8 * var(--about-px));
   }
 }
-
 
 /* ---------------------------------------------------------------------------
  * Right: vertical auto-scrolling strip of portfolio-company logos ("backed
@@ -1810,7 +1786,6 @@ html {
   .focus-item-title {
     font-size: var(--fluid-label);
   }
-
 }
 
 /* Same proportional ramp as the tokens — these sizes are section-specific, not
@@ -1825,7 +1800,6 @@ html {
   .focus-item-title {
     font-size: var(--fluid-label); /* 24 -> 32 */
   }
-
 }
 
 @media (max-width: 1024px) {
@@ -2140,9 +2114,7 @@ html {
  * ends where it ends instead of leaving dead space under the last row. */
 .portfolio-grid-clip {
   /* The fold: N cards tall plus the N-1 gaps between them. */
-  --fold: calc(
-    var(--visible-rows) * var(--card-h) + (var(--visible-rows) - 1) * var(--grid-gap)
-  );
+  --fold: calc(var(--visible-rows) * var(--card-h) + (var(--visible-rows) - 1) * var(--grid-gap));
 
   /* Bottom shadow room for the LAST VISIBLE row, capped at the gap. The box
      below the fold is the gutter to the next row, and it is the only place this
@@ -2237,7 +2209,9 @@ html {
   background: var(--color-surface-page, #ffffff);
   box-shadow: 0 2px 21.6px 5px rgba(0, 0, 0, 0.03);
   text-decoration: none;
-  transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2291,7 +2265,6 @@ a.portfolio-card:focus-visible {
   text-align: center;
   color: rgba(4, 33, 43, 0.7);
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .portfolio-card {
@@ -2352,7 +2325,6 @@ a.portfolio-list-row:focus-visible {
   height: 32px;
   border-radius: 4px;
 }
-
 
 .portfolio-list-mark {
   display: block;
@@ -2417,7 +2389,9 @@ a.portfolio-list-row:focus-visible {
   white-space: nowrap;
   width: fit-content;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .portfolio-button:hover {
@@ -2474,7 +2448,6 @@ a.portfolio-list-row:focus-visible {
   .portfolio-list-row {
     gap: 20px;
   }
-
 
   .portfolio-button-wrap {
     margin-top: 48px;
@@ -2660,7 +2633,6 @@ a.portfolio-list-row:focus-visible {
 }
 
 @media (max-width: 1024px) {
-
   /* The legal bar stacks from here rather than from 640px. Its row put a 680px
      disclaimer next to the copyright and both policy links, which only fits on
      a desktop measure — on a tablet the disclaimer collapsed into a narrow
@@ -3158,7 +3130,9 @@ a.portfolio-list-row:focus-visible {
   --label-tracking: 0.03em;
   border: none;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 /* One rule, because they are the same mark: the count beside a filter label and
@@ -3206,8 +3180,7 @@ a.portfolio-list-row:focus-visible {
 .blog-grid-section[data-filter='founders'] .blog-card:not([data-category='founders']),
 .blog-grid-section[data-filter='working-at-mento']
   .blog-card:not([data-category='working-at-mento']),
-.blog-grid-section[data-filter='best-practices']
-  .blog-card:not([data-category='best-practices']) {
+.blog-grid-section[data-filter='best-practices'] .blog-card:not([data-category='best-practices']) {
   display: none;
 }
 
@@ -3349,7 +3322,6 @@ a.portfolio-list-row:focus-visible {
     row-gap: 48px;
   }
 }
-
 
 /* ---------------------------------------------------------------------------
  * Above 1440: the spacing the design states as a flat number.

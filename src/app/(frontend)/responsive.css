@@ -17,21 +17,14 @@
   height: 32px;
   object-fit: contain;
 }
-@media (min-width: 1025px) and (max-width: 1199px) {
-  .portfolio-card {
-    padding: 16px;
-  }
-}
 .portfolio-card-label {
   font-size: var(--type-body);
   line-height: var(--type-body-leading);
 }
 @media (max-width: 1024px) {
   :root {
-    --grid-margin: 32px;
-    --fluid-container: calc(100vw - 64px);
-    --type-h1: 48px;
-    --type-h1-leading: 56px;
+    --grid-margin: clamp(24px, calc(3.125vw + 4px), 32px);
+    --fluid-container: calc(100vw - 2 * var(--grid-margin));
   }
   .navbar {
     position: fixed;
@@ -45,35 +38,25 @@
   .section-portfolio,
   .section-focus {
     justify-content: flex-start;
-    padding-top: 96px;
-  }
-  .section-about,
-  .section-portfolio {
-    padding-bottom: 128px;
-  }
-  .section-focus {
-    padding-bottom: 64px;
   }
   .section-portfolio:not(.is-expanded) {
     height: auto;
-    min-height: 100svh;
-  }
-  .section-portfolio.is-expanded {
-    padding-top: var(--portfolio-top-lock, 96px);
   }
   .about-grid,
   .focus-grid {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: 32px;
+  }
+  .about-grid {
+    row-gap: 48px;
   }
   .about-intro {
     width: 100%;
-    max-width: 504px;
     justify-self: start;
   }
   .about-logos {
     width: 100%;
-    height: 128px;
+    height: 80px;
+    margin-top: 0;
   }
   .portfolio-view-btn {
     min-height: 40px;
@@ -82,19 +65,14 @@
   .portfolio-view-toggle {
     padding: 8px;
   }
-  .portfolio-button-wrap {
-    top: calc(var(--portfolio-controls-edge) + 80px);
-  }
   .portfolio-header {
     width: 100%;
-    padding-right: 192px;
-    min-height: 128px;
   }
   .section-portfolio {
-    --grid-card-min-height: 192px;
+    --grid-card-min-height: clamp(168px, calc(232px - 6.25vw), 192px);
   }
   .portfolio-card {
-    min-height: 192px;
+    min-height: var(--grid-card-min-height);
   }
   .portfolio-grid {
     column-gap: 16px;
@@ -106,12 +84,8 @@
   .focus-list {
     max-width: none;
   }
-  .focus-grid {
-    row-gap: 48px;
-  }
   .focus-item {
     display: grid;
-    grid-template-columns: 176px minmax(0, 1fr);
     column-gap: 24px;
   }
   .hero-explore,
@@ -120,10 +94,7 @@
     bottom: 48px;
   }
   .section-footer {
-    margin-top: 128px;
     padding-top: 24px;
-    padding-bottom: 48px;
-    padding-inline: 16px;
   }
 }
 
@@ -131,29 +102,11 @@
 .about-logo-picture {
   display: contents;
 }
-.navbar .logo,
-.navbar.is-on-dark .logo {
-  transition: opacity 350ms ease-in-out;
-}
 .navbar.is-over-text .logo {
   opacity: 0;
   pointer-events: none;
 }
-@media (prefers-reduced-motion: reduce) {
-  .navbar .logo,
-  .navbar.is-on-dark .logo {
-    transition: none;
-  }
-}
-@media (max-width: 640px) {
-  :root {
-    --grid-margin: 24px;
-    --fluid-container: calc(100vw - 48px);
-    --type-h1: 36px;
-    --type-h1-leading: 44px;
-    --type-h2: 22px;
-    --type-h2-leading: 30px;
-  }
+@media (max-width: 1024px) {
   .section-about,
   .section-portfolio,
   .section-focus {
@@ -174,18 +127,13 @@
   .section-portfolio.is-expanded {
     padding-top: var(--portfolio-top-lock, 96px);
   }
-  .about-grid {
-    row-gap: 48px;
-  }
-  .about-logos {
-    margin-top: 0;
-    height: 80px;
-  }
   .about-logo-item {
     width: calc(var(--about-logo-width, 136px) + 32px);
     margin-right: 0;
   }
-  .about-intro,
+  .about-intro {
+    max-width: min(100%, 504px);
+  }
   .about-heading,
   .about-body {
     max-width: 100%;
@@ -346,11 +294,6 @@
     top: calc(var(--portfolio-controls-edge) + 64px);
   }
 }
-@media (min-width: 641px) and (max-width: 1024px) {
-  .section-portfolio.is-expanded {
-    padding-bottom: 208px;
-  }
-}
 @media (max-width: 640px) {
   .navbar.is-mobile-compact .logo {
     width: calc(var(--header-mark-width) * 0.8);
@@ -396,22 +339,24 @@ html {
   line-height: 20px;
 }
 @media (min-width: 641px) {
+  .portfolio-toolbar {
+    display: flex;
+  }
   .portfolio-view-toggle {
     box-sizing: border-box;
-    height: 56px;
-    min-height: 56px;
-  }
-}
-@media (min-width: 1025px) {
-  .portfolio-view-toggle {
     height: 48px;
     min-height: 48px;
   }
+  .portfolio-view-btn {
+    min-height: 32px;
+  }
+}
+@media (min-width: 1025px) {
   .focus-list {
     align-self: center;
   }
 }
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
   .focus-roster-row {
     gap: 8px;
   }
@@ -457,11 +402,6 @@ html {
 @media (min-width: 1025px) {
   .about-explore {
     bottom: 128px;
-  }
-}
-@media (min-width: 641px) and (max-width: 1024px) {
-  .about-explore {
-    bottom: 80px;
   }
 }
 
@@ -510,14 +450,61 @@ html {
   }
 }
 
-/* Fill the currently visible viewport from the first paint, including mobile browser chrome. */
+/* Use the stable viewport so mobile browser chrome cannot move later sections. */
 .hero {
-  height: 100vh;
-  min-height: 100vh;
-  height: 100dvh;
-  min-height: 100dvh;
+  height: max(640px, 100vh);
+  min-height: max(640px, 100vh);
+  height: max(640px, 100svh);
+  min-height: max(640px, 100svh);
   overflow: clip;
 }
 .hero .content {
   height: 100%;
+}
+
+/* Keep the desktop composition usable when the window is short. The copy,
+   the 64px cue gap and the cue's bottom inset must fit before centring. */
+@media (min-width: 1025px) {
+  .section-about {
+    min-height: max(840px, 100svh);
+  }
+  .hero .content {
+    transform: translateY(min(64px, calc(50dvh - 304px)));
+  }
+}
+
+/* Join the tablet gutter at 1024px and the established 200px desktop gutter
+   at 1440px; crossing the breakpoint must not shift the whole content column. */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  :root {
+    --grid-margin: clamp(32px, calc(40.384615vw - 381.53846px), 200px);
+    --fluid-container: calc(100vw - 2 * var(--grid-margin));
+  }
+}
+
+/* The horizontal strip is shorter than the SVG's transparent canvas. Anchor
+   images explicitly so intrinsic image sizing cannot shift the painted logo. */
+@media (max-width: 1024px) {
+  .about-logo-item {
+    position: relative;
+    height: 100%;
+  }
+  .about-logo-item img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Typography interpolates continuously; line-height follows the same scale. */
+:root {
+  --type-h1: clamp(36px, calc(3.174603vw + 23.619048px), 56px);
+  --type-h1-leading: calc(var(--type-h1) + 8px);
+  --type-h2: clamp(22px, calc(0.529101vw + 19.936508px), 24px);
+  --type-h2-leading: calc(var(--type-h2) + 8px);
+}
+
+.portfolio-card {
+  padding: clamp(16px, calc(1.923077vw - 3.692308px), 24px);
 }

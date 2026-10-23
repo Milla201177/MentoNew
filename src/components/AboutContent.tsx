@@ -151,7 +151,7 @@ export default function AboutContent({ companies }: { companies: Company[] }) {
                 const image = (
                   <picture className="about-logo-picture">
                     <source
-                      media="(max-width: 640px)"
+                      media="(max-width: 1024px)"
                       srcSet={logo.replace('/about-logos/', '/about-logos-mobile/')}
                     />
                     <img src={logo} alt={company.name} fetchPriority="low" decoding="async" />

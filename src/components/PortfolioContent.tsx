@@ -8,12 +8,12 @@ import type { Company } from '@/lib/portfolio'
 import { safeHref } from '@/lib/safeHref'
 import { animateCardFill, animateCardHover } from '@/lib/animateCardHover'
 
-const VISIBLE_COUNT = 6
+const SHORT_PORTFOLIO_COUNT = 12
 
 const PHONE_LIST_ONLY = '(max-width: 640px)'
 
 export default function PortfolioContent({ companies }: { companies: Company[] }) {
-  const [visibleCount, setVisibleCount] = useState(VISIBLE_COUNT)
+  const visibleCount = Math.min(SHORT_PORTFOLIO_COUNT, companies.length)
   const visibleCompanies = companies.slice(0, visibleCount)
   const extraCompanies = companies.slice(visibleCount)
   const hasMore = extraCompanies.length > 0
@@ -69,8 +69,8 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
   useEffect(() => {
     const section = root.current
     if (!section) return
-    // Browser toolbars change innerHeight while scrolling. The small viewport
-    // stays stable, so companies do not move between the main and extra lists.
+    // Re-measure wrapping and grid rows only for real viewport changes.
+    // Mobile browser toolbars must not trigger layout work while scrolling.
     const viewport = document.createElement('div')
     viewport.style.cssText =
       'position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none'
@@ -81,32 +81,6 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     let previousHeight = viewport.getBoundingClientRect().height
     const fit = () => {
       if (disposed) return
-      const viewportHeight = viewport.getBoundingClientRect().height
-      const style = getComputedStyle(section)
-      const header = section.querySelector<HTMLElement>('.portfolio-header')
-      const footer = section.querySelector<HTMLElement>('.portfolio-button-wrap')
-      if (!header || !footer) return
-      const mobile = window.matchMedia('(max-width: 640px)').matches
-      const desktop = window.matchMedia('(min-width: 1025px)').matches
-      const explore = section.querySelector<HTMLElement>('.portfolio-explore')
-      const listTop =
-        header.getBoundingClientRect().bottom -
-        section.getBoundingClientRect().top +
-        (parseFloat(getComputedStyle(header).marginBottom) || 0)
-      const desktopBudget = viewportHeight - 96 - (explore?.offsetHeight || 48) - 112 - listTop
-      const budget = desktop
-        ? Math.max(48, desktopBudget)
-        : Math.max(
-            48,
-            viewportHeight -
-              parseFloat(style.paddingTop) -
-              (mobile
-                ? parseFloat(style.paddingBottom)
-                : Math.max(160, parseFloat(style.paddingBottom))) -
-              header.offsetHeight -
-              footer.offsetHeight -
-              (mobile ? 80 : 40),
-          )
       const listView = section.querySelector<HTMLElement>('.portfolio-view-list')
       const previousStyle = listView?.style.cssText
       // Measure wrapped list rows at the current width even while Grid is shown.
@@ -117,33 +91,12 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
       const row = list?.querySelector<HTMLElement>('.portfolio-list-row')
       if (row && list) {
         const gap = parseFloat(getComputedStyle(list).rowGap) || 0
-        let used = 0
-        let count = 0
-        for (const item of section.querySelectorAll<HTMLElement>(
-          '.portfolio-view-list .portfolio-list-row',
-        )) {
-          const next = item.offsetHeight + (count ? gap : 0)
-          if (used + next > budget) break
-          used += next
-          count++
-        }
-        // Leave the last fitting company for Show All rather than crowding the fold.
-        if (!mobile && !desktop && count > 1) {
-          const last = section.querySelectorAll<HTMLElement>(
-            '.portfolio-view-list .portfolio-list-row',
-          )[count - 1]
-          used -= last.offsetHeight + gap
-          count--
-        }
-        // Show four more companies in the preview, even when it exceeds one screen.
         const items = section.querySelectorAll<HTMLElement>(
           '.portfolio-view-list .portfolio-list-row',
         )
-        const previewCount = Math.min(items.length, Math.max(1, count) + 4)
-        used = Array.from(items)
-          .slice(0, previewCount)
+        const used = Array.from(items)
+          .slice(0, visibleCount)
           .reduce((height, item, index) => height + item.offsetHeight + (index ? gap : 0), 0)
-        setVisibleCount(previewCount)
         section.style.setProperty('--portfolio-view-height', `${used}px`)
       }
       if (listView && previousStyle !== undefined) listView.style.cssText = previousStyle
@@ -171,7 +124,7 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
       window.removeEventListener('resize', reflow)
       section.removeEventListener('section-spacing-change', fit)
     }
-  }, [viewMode, companies])
+  }, [viewMode, companies, visibleCount])
 
   useEffect(() => {
     const section = root.current
@@ -278,14 +231,13 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
       extra?.addEventListener('transitionend', finish)
       return () => extra?.removeEventListener('transitionend', finish)
     }
-    if (!clip || !grid) return
+    if (!clip || !grid || !grid.firstElementChild) return
     const columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length
-    const available = parseFloat(section.style.getPropertyValue('--portfolio-view-height')) || 392
     const minimumCardHeight =
-      parseFloat(getComputedStyle(section).getPropertyValue('--grid-card-min-height')) || 168
-    const rows = Math.max(1, Math.floor((available + 16) / (minimumCardHeight + 16)))
+      parseFloat(getComputedStyle(grid.firstElementChild as HTMLElement).minHeight) || 168
+    const rows = Math.max(1, Math.ceil(visibleCount / columns))
     clip.style.setProperty('--visible-rows', String(rows))
-    const visible = columns * rows
+    const visible = visibleCount
     const cards = Array.from(grid.children) as HTMLElement[]
 
     const initiallyHidden = cards.map((card) => getComputedStyle(card).display === 'none')
@@ -295,9 +247,9 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
       if (card.inert) card.setAttribute('aria-hidden', 'true')
       else card.removeAttribute('aria-hidden')
     })
-    const collapsed = parseFloat(section.style.getPropertyValue('--portfolio-view-height')) || 392
     const gap = parseFloat(getComputedStyle(grid).rowGap) || 16
-    const cardHeight = (collapsed - gap * (rows - 1)) / rows
+    const cardHeight = minimumCardHeight
+    const collapsed = rows * cardHeight + gap * (rows - 1)
     grid.style.gridAutoRows = `${cardHeight}px`
     grid.style.height = 'auto'
     const to = expanded ? grid.getBoundingClientRect().height : collapsed
@@ -362,6 +314,7 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     return (
       <Card
         className="portfolio-card"
+        data-company={company.slug}
         key={key}
         {...cardLinkProps}
         onPointerEnter={(event) => {
@@ -405,6 +358,7 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     return (
       <Row
         className="portfolio-list-row"
+        data-company={company.slug}
         key={key}
 
         {...rowLinkProps}
