@@ -343,6 +343,9 @@ html {
     padding: 8px 12px;
   }
   .portfolio-view-btn {
+    box-sizing: border-box;
+    width: 48px;
+    flex: 0 0 48px;
     min-height: 0;
     height: 100%;
     padding: 0 6px;
