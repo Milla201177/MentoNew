@@ -1,12 +1,15 @@
 'use client'
 
+import HeroShader from '@/components/HeroShader'
 import { scrollToScreen } from '@/lib/scrollToScreen'
 
-/** Black first screen with a static heading. */
+/** Original cloud backdrop behind the current heading and layout. */
 
 export default function Hero() {
   return (
     <section className="hero">
+      <HeroShader />
+      <div className="bottom-fade" aria-hidden="true" />
       <div className="content">
         <h1 id="hero-heading">
           We help the outliers on their journey to build generational companies
