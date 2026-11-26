@@ -142,33 +142,52 @@ export default function PortfolioContent({ companies }: { companies: Company[] }
     const section = root.current
     if (!section) return
     const heading = section.querySelector<HTMLElement>('.portfolio-display')
-    const metrics = document.createElement('canvas').getContext('2d')
-    if (!heading || !metrics) return
-
+    const toolbar = section.querySelector<HTMLElement>('.portfolio-toolbar')
+    const button = section.querySelector<HTMLElement>('.portfolio-button')
+    const buttonWrap = section.querySelector<HTMLElement>('.portfolio-button-wrap')
+    if (!heading || !toolbar || !button || !buttonWrap) return
     let active = true
-    const alignControls = () => {
-      if (!active) return
-      const style = getComputedStyle(heading)
+    const setPosition = (property: string, pixels: number) => {
+      const value = `${pixels.toFixed(2)}px`
+      if (section.style.getPropertyValue(property) !== value) {
+        section.style.setProperty(property, value)
+      }
+    }
+    const metrics = document.createElement('canvas').getContext('2d')
+    const capitalInset = (element: HTMLElement) => {
+      if (!metrics) return 0
+      const style = getComputedStyle(element)
       metrics.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
       const ink = metrics.measureText('H')
       const lineHeight = parseFloat(style.lineHeight)
       const ascent = ink.fontBoundingBoxAscent ?? parseFloat(style.fontSize) * 0.8
       const descent = ink.fontBoundingBoxDescent ?? parseFloat(style.fontSize) * 0.2
       const baseline = (lineHeight - ascent - descent) / 2 + ascent
-      const value = `${(baseline - ink.actualBoundingBoxAscent).toFixed(2)}px`
-      if (section.style.getPropertyValue('--portfolio-control-inset') !== value) {
-        section.style.setProperty('--portfolio-control-inset', value)
-      }
+      return baseline - ink.actualBoundingBoxAscent
+    }
+    const alignControls = () => {
+      if (!active || !toolbar.offsetHeight) return
+      const inset = capitalInset(heading)
+      const top = heading.getBoundingClientRect().top - section.getBoundingClientRect().top + inset
+      setPosition('--portfolio-control-inset', inset)
+      const buttonOffset =
+        button.getBoundingClientRect().top - buttonWrap.getBoundingClientRect().top
+      setPosition('--portfolio-toolbar-top', top)
+      setPosition('--portfolio-button-top', top + toolbar.offsetHeight + 16 - buttonOffset)
     }
     alignControls()
     const observer = new ResizeObserver(alignControls)
-    observer.observe(heading)
+    const container = section.querySelector('.portfolio-container')
+    if (container) observer.observe(container)
+    for (const element of [heading, toolbar, button]) observer.observe(element)
     document.fonts.ready.then(alignControls)
+    window.addEventListener('resize', alignControls)
     return () => {
       active = false
       observer.disconnect()
+      window.removeEventListener('resize', alignControls)
     }
-  }, [])
+  }, [viewMode, expanded, visibleCount])
 
   const chooseView = (mode: 'grid' | 'list') => {
     if (viewMode === 'list' && !expanded) {
