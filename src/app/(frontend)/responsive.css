@@ -332,17 +332,17 @@ html {
 }
 @media (min-width: 641px) and (max-width: 1024px) {
   .section-about {
-    padding-top: 72px;
+    padding-top: 80px;
   }
   .section-portfolio,
   .section-focus {
-    padding-top: 104px;
+    padding-top: 112px;
   }
   .section-portfolio.is-expanded {
-    padding-top: var(--portfolio-top-lock, 104px);
+    padding-top: var(--portfolio-top-lock, 112px);
   }
   .section-footer {
-    margin-top: 104px;
+    margin-top: 112px;
   }
   .portfolio-container {
     position: relative;
