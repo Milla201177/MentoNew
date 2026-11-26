@@ -121,9 +121,6 @@
   .section-portfolio {
     overflow-anchor: none;
   }
-  .section-portfolio:not(.is-expanded) {
-    min-height: max(640px, 100svh);
-  }
   .section-portfolio.is-expanded {
     padding-top: var(--portfolio-top-lock, 96px);
   }
@@ -156,6 +153,7 @@
     justify-self: start;
     align-items: flex-start;
     align-self: start;
+    min-height: 0;
     margin: 64px 0 0;
     transform: none;
   }
