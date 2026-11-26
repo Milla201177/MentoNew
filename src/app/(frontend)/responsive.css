@@ -331,6 +331,19 @@ html {
   line-height: 16px;
 }
 @media (min-width: 641px) and (max-width: 1024px) {
+  .section-about {
+    padding-top: 72px;
+  }
+  .section-portfolio,
+  .section-focus {
+    padding-top: 104px;
+  }
+  .section-portfolio.is-expanded {
+    padding-top: var(--portfolio-top-lock, 104px);
+  }
+  .section-footer {
+    margin-top: 104px;
+  }
   .portfolio-container {
     position: relative;
   }
