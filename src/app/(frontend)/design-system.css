@@ -789,14 +789,8 @@ button,
   grid-row: 2;
   max-width: 504px;
 }
-.portfolio-toolbar {
-  position: absolute;
-  right: var(--page-inset);
-  margin: 0;
-}
+.portfolio-toolbar,
 .portfolio-button-wrap {
-  position: absolute;
-  right: var(--page-inset);
   margin: 0;
 }
 .portfolio-list,
@@ -884,16 +878,6 @@ button,
   .about-logo-item:hover {
     scale: 1.05;
   }
-}
-.portfolio-toolbar {
-  top: var(--portfolio-toolbar-top, 0px);
-  bottom: auto;
-  transform: none;
-}
-.portfolio-button-wrap {
-  top: var(--portfolio-button-top, 64px);
-  bottom: auto;
-  transform: none;
 }
 @media (max-width: 640px) {
   .portfolio-header {

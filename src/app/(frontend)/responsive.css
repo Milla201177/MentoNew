@@ -331,12 +331,20 @@ html {
   line-height: 16px;
 }
 @media (min-width: 641px) {
+  .portfolio-container {
+    position: relative;
+    --portfolio-toggle-height: 48px;
+  }
   .portfolio-toolbar {
     display: flex;
+    position: absolute;
+    grid-area: auto;
+    top: var(--portfolio-control-inset, 12px);
+    right: 0;
   }
   .portfolio-view-toggle {
     box-sizing: border-box;
-    height: 48px;
+    height: var(--portfolio-toggle-height);
     min-height: 0;
     padding: 8px 12px;
   }
@@ -351,6 +359,13 @@ html {
   }
 }
 @media (min-width: 1025px) {
+  .portfolio-button-wrap {
+    position: absolute;
+    grid-area: auto;
+    top: calc(var(--portfolio-control-inset, 12px) + var(--portfolio-toggle-height) + 16px);
+    right: 0;
+    align-items: flex-start;
+  }
   .focus-list {
     align-self: center;
   }
