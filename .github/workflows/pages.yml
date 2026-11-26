@@ -21,7 +21,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install
+      - run: corepack pnpm@10.33.0 install --frozen-lockfile
+        env:
+          COREPACK_ENABLE_AUTO_PIN: '0'
       - run: node tools/build-pages.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
